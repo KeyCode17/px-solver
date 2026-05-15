@@ -8,7 +8,7 @@ if [[ "$first_line" =~ ^(Merge|Revert|fixup!|squash!) ]]; then
   exit 0
 fi
 
-pattern='^(feat|fix|chore|docs|refactor|test|build|ci|perf|style|revert)(\([a-z0-9\-\.\_/]+\))?!?: .+'
+pattern='^(feat|fix|chore|docs|refactor|test|build|ci|perf|style|revert)([(][a-z0-9._/-]+[)])?!?: .+'
 
 if ! [[ "$first_line" =~ $pattern ]]; then
   printf 'Commit subject does not match Conventional Commits:\n  %s\n' "$first_line" >&2
