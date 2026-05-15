@@ -172,7 +172,7 @@ fn phase_description(name: &str) -> String {
     match name {
         "00" => "Workspace scaffold, rust-toolchain 1.95, lefthook, CI, xtask. SOW-DEL-001.".into(),
         "01" => "Domain types, PX detector, cookie cache, challenge pipeline, handler stubs. SOW-DEL-002/004/013-017.".into(),
-        "02" => "Chromium pool + stealth bundle + PerimeterX handler. SOW-DEL-003a/003b.".into(),
+        "02" => "Chromium pool + 8-patch stealth bundle + PerimeterX handler + _pxhd parser. SOW-DEL-003a/003b. Phase 02 exit gates (>=95% solve, p50 <=6s, zero zombies, FP regressions) are not verified in this build; awaits operator soak.".into(),
         "03" => "Axum REST API, API-key auth, allowlist, audit log, native stub. SOW-DEL-005/006/009.".into(),
         "04" => "Operator CLI, canary integration test, operator docs. MVP-AC-1..7 hold. SOW-DEL-007/008/010.".into(),
         n => format!("Phase {n} release."),
