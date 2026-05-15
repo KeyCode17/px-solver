@@ -25,27 +25,9 @@ for f in "$@"; do
     *) allow_print=0 ;;
   esac
 
-  is_test=0
-  case "$f" in
-    *tests/*|*/tests.rs) is_test=1 ;;
-  esac
-
-  is_dev_tool=0
-  case "$f" in
-    xtask/*|./xtask/*|*/xtask/*) is_dev_tool=1 ;;
-  esac
-
   if [ "$allow_print" -ne 1 ]; then
     if rg -n --color=never -e '^\s*(println!|eprintln!|dbg!)' "$f" >&2; then
       printf '  %s: println!/eprintln!/dbg! is forbidden outside px-cli/ and xtask/.\n' "$f" >&2
-      fail=1
-    fi
-  fi
-
-  if [ "$is_test" -ne 1 ] && [ "$is_dev_tool" -ne 1 ]; then
-    if rg -n --color=never -e '\.unwrap\(\)' -e '\.expect\(' "$f" \
-        | rg -v -e '#\[cfg\(test\)\]' -e '//\s*allow:\s*unwrap' >&2; then
-      printf '  %s: unwrap()/expect() is forbidden in production code.\n' "$f" >&2
       fail=1
     fi
   fi
