@@ -12,3 +12,6 @@ repository.workspace   = true
 workspace = true
 
 [dependencies]
+async-trait = { workspace = true }
+px-core     = { path = "../px-core" }
+px-errors   = { path = "../px-errors" }

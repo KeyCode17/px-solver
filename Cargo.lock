@@ -660,6 +660,11 @@ version = "0.1.0"
 [[package]]
 name = "px-native"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "px-core",
+ "px-errors",
+]
 
 [[package]]
 name = "px-perimeterx"
