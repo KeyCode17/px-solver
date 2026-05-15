@@ -22,10 +22,11 @@ Add an `xtask` crate at the **repository root** (alongside the `px-*` crates) im
 
 | Command | Behavior |
 |---|---|
-| `cargo xtask bump <major\|minor\|patch> [phase] [--skip-gate]` | Bumps the workspace version in root `Cargo.toml`. Unless `--skip-gate`, runs `cargo build --workspace --all-targets` and `cargo test --workspace --no-fail-fast` before committing. Commits with `chore: bump to X.Y.Z` (or `chore: bump to X.Y.Z (Phase <phase>)` if a phase tag is given) and creates an annotated git tag `vX.Y.Z`. |
+| `cargo xtask bump <major\|minor\|patch> [phase] [--skip-gate] [--local] [--remote <name>] [--title <text>]` | Bumps the workspace version in root `Cargo.toml`. Unless `--skip-gate`, runs `cargo build --workspace --all-targets` and `cargo test --workspace --no-fail-fast`. Commits (`chore: bump to X.Y.Z` or `... (Phase <phase>)`), tags annotated `vX.Y.Z`. **Unless `--local` is set, also pushes HEAD + tag to `--remote` (default `origin`) and creates a GitHub release via `gh release create` with title `vX.Y.Z` and body whose first line is an H1 (`# Phase NN — <name>`, `# <title>` if `--title` given, or `# vX.Y.Z` otherwise).** |
 | `cargo xtask check-loc [max=200]` | Rust-native equivalent of `scripts/check_loc.sh`. Walks the tree, skips `target/`, `tests/`, `examples/`, `xtask/`, `px-research/`, fails if any `.rs` file exceeds the limit. |
-| `cargo xtask release [--remote <name>]` | Pushes `HEAD` and the current `v<version>` tag to `<remote>` (default `origin`). Read-only with respect to the working tree; does not bump. |
+| `cargo xtask release [--remote <name>]` | Pushes `HEAD` and the current `v<version>` tag to `<remote>` (default `origin`) and creates a GitHub release. Use this for retroactive publish when a bump was done with `--local`. Does not modify the working tree. |
 | `cargo xtask canary` | Runs `cargo test -p px-server --test pedidosya -- --nocapture` with `CI_CANARY=1`. The canary is gated behind this env flag in source per SOW-DEL-008 to keep unit CI from hammering the target. |
+| `cargo xtask phase <NN> [--skip-gate] [--local] [--remote <name>]` | Convenience for the phase-aligned versioning policy in [ADR-0017](0017-phase-aligned-versioning.md). Picks `minor` for phases `00..03`, `major` for `04`, no-op for research phases (`R*`). Delegates to `bump` so the push + GitHub release flow above applies. |
 
 ### Naming exception
 

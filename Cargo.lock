@@ -145,77 +145,77 @@ dependencies = [
 
 [[package]]
 name = "px-auth"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-cache"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-captcha"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-cli"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-cloudflare"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-core"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-datadome"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-detector"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-errors"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "px-harvester"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-native"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-perimeterx"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-pipeline"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-server"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-turnstile"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "px-types"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "px-validation"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "quote"

@@ -20,6 +20,12 @@ enum Cmd {
         phase: Option<String>,
         #[arg(long)]
         skip_gate: bool,
+        #[arg(long)]
+        local: bool,
+        #[arg(long)]
+        remote: Option<String>,
+        #[arg(long)]
+        title: Option<String>,
     },
     CheckLoc {
         #[arg(default_value_t = 200)]
@@ -34,6 +40,10 @@ enum Cmd {
         name: String,
         #[arg(long)]
         skip_gate: bool,
+        #[arg(long)]
+        local: bool,
+        #[arg(long)]
+        remote: Option<String>,
     },
 }
 
@@ -50,15 +60,23 @@ fn main() -> Result<()> {
             kind,
             phase,
             skip_gate,
-        } => bump(kind, phase, skip_gate),
+            local,
+            remote,
+            title,
+        } => bump(kind, phase, skip_gate, local, remote, title),
         Cmd::CheckLoc { max } => check_loc(max),
         Cmd::Release { remote } => release(remote),
         Cmd::Canary => canary(),
-        Cmd::Phase { name, skip_gate } => phase(name, skip_gate),
+        Cmd::Phase {
+            name,
+            skip_gate,
+            local,
+            remote,
+        } => phase(name, skip_gate, local, remote),
     }
 }
 
-fn phase(name: String, skip_gate: bool) -> Result<()> {
+fn phase(name: String, skip_gate: bool, local: bool, remote: Option<String>) -> Result<()> {
     let kind = match name.as_str() {
         "00" | "01" | "02" | "03" => BumpKind::Minor,
         "04" => BumpKind::Major,
@@ -68,10 +86,17 @@ fn phase(name: String, skip_gate: bool) -> Result<()> {
         }
         n => bail!("unknown phase '{n}'; expected 00|01|02|03|04|R*"),
     };
-    bump(kind, Some(name), skip_gate)
+    bump(kind, Some(name), skip_gate, local, remote, None)
 }
 
-fn bump(kind: BumpKind, phase: Option<String>, skip_gate: bool) -> Result<()> {
+fn bump(
+    kind: BumpKind,
+    phase: Option<String>,
+    skip_gate: bool,
+    local: bool,
+    remote: Option<String>,
+    title: Option<String>,
+) -> Result<()> {
     let manifest_path = Path::new("Cargo.toml");
     let manifest = fs::read_to_string(manifest_path).context("read root Cargo.toml")?;
     let cur = parse_workspace_version(&manifest)?;
@@ -90,13 +115,93 @@ fn bump(kind: BumpKind, phase: Option<String>, skip_gate: bool) -> Result<()> {
         run("cargo", &["test", "--workspace", "--no-fail-fast"])?;
     }
 
-    let msg = match phase {
+    let msg = match phase.as_deref() {
         Some(p) => format!("chore: bump to {next} (Phase {p})"),
         None => format!("chore: bump to {next}"),
     };
+    let tag = format!("v{next}");
     run("git", &["commit", "-am", &msg])?;
-    run("git", &["tag", "-a", &format!("v{next}"), "-m", &msg])?;
+    run("git", &["tag", "-a", &tag, "-m", &msg])?;
     println!("[xtask] bumped to {next}");
+
+    if local {
+        println!("[xtask] --local set; skipping push + GitHub release");
+        return Ok(());
+    }
+    let body = release_body(&next, kind, phase.as_deref(), title.as_deref());
+    publish(&tag, &body, remote.as_deref().unwrap_or("origin"))
+}
+
+fn release_body(
+    version: &Version,
+    kind: BumpKind,
+    phase: Option<&str>,
+    title: Option<&str>,
+) -> String {
+    let header = if let Some(p) = phase {
+        format!("# {}", phase_title(p))
+    } else if let Some(t) = title {
+        format!("# {t}")
+    } else {
+        format!("# v{version}")
+    };
+    let body = if let Some(p) = phase {
+        phase_description(p)
+    } else {
+        match kind {
+            BumpKind::Major => "Major release.".into(),
+            BumpKind::Minor => "Minor release.".into(),
+            BumpKind::Patch => "Maintenance bump.".into(),
+        }
+    };
+    format!("{header}\n\n{body}\n")
+}
+
+fn phase_title(name: &str) -> String {
+    match name {
+        "00" => "Phase 00 \u{2014} Bootstrap".into(),
+        "01" => "Phase 01 \u{2014} Foundation".into(),
+        "02" => "Phase 02 \u{2014} Harvester + PX handler".into(),
+        "03" => "Phase 03 \u{2014} Server + Auth + Native stub".into(),
+        "04" => "Phase 04 \u{2014} CLI + Canary + Docs (MVP)".into(),
+        n => format!("Phase {n}"),
+    }
+}
+
+fn phase_description(name: &str) -> String {
+    match name {
+        "00" => "Workspace scaffold, rust-toolchain 1.95, lefthook, CI, xtask. SOW-DEL-001.".into(),
+        "01" => "Domain types, PX detector, cookie cache, challenge pipeline, handler stubs. SOW-DEL-002/004/013-017.".into(),
+        "02" => "Chromium pool + stealth bundle + PerimeterX handler. SOW-DEL-003a/003b.".into(),
+        "03" => "Axum REST API, API-key auth, allowlist, audit log, native stub. SOW-DEL-005/006/009.".into(),
+        "04" => "Operator CLI, canary integration test, operator docs. MVP-AC-1..7 hold. SOW-DEL-007/008/010.".into(),
+        n => format!("Phase {n} release."),
+    }
+}
+
+fn publish(tag: &str, body: &str, remote: &str) -> Result<()> {
+    run("git", &["push", remote, "HEAD"])?;
+    run("git", &["push", remote, tag])?;
+    let body_file = std::env::temp_dir().join(format!("xtask-release-{tag}.md"));
+    fs::write(&body_file, body).context("write release body file")?;
+    let body_path = body_file.to_string_lossy();
+    let status = Command::new("gh")
+        .args([
+            "release",
+            "create",
+            tag,
+            "--title",
+            tag,
+            "--notes-file",
+            body_path.as_ref(),
+        ])
+        .status()
+        .context("spawn gh release create")?;
+    let _ = fs::remove_file(&body_file);
+    if !status.success() {
+        bail!("gh release create failed: {status}");
+    }
+    println!("[xtask] published {tag} to {remote}");
     Ok(())
 }
 
@@ -137,11 +242,8 @@ fn release(remote: Option<String>) -> Result<()> {
     let manifest = fs::read_to_string("Cargo.toml").context("read root Cargo.toml")?;
     let cur = parse_workspace_version(&manifest)?;
     let tag = format!("v{cur}");
-    let r = remote.as_deref().unwrap_or("origin");
-    run("git", &["push", r, "HEAD"])?;
-    run("git", &["push", r, &tag])?;
-    println!("[xtask] released {tag} to {r}");
-    Ok(())
+    let body = format!("# {tag}\n\nMaintenance bump.\n");
+    publish(&tag, &body, remote.as_deref().unwrap_or("origin"))
 }
 
 fn canary() -> Result<()> {
