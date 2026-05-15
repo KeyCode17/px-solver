@@ -1,6 +1,6 @@
 [package]
 name         = "px-cache"
-description  = "Cookie cache port + DashMap/Redis adapters"
+description  = "Cookie cache port + DashMap default, optional Redis adapter"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
@@ -16,3 +16,12 @@ redis   = []
 workspace = true
 
 [dependencies]
+async-trait = { workspace = true }
+dashmap     = { workspace = true }
+px-core     = { path = "../px-core" }
+px-errors   = { path = "../px-errors" }
+serde       = { workspace = true }
+tokio       = { workspace = true, features = ["sync", "time", "rt", "macros"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

@@ -1,6 +1,6 @@
-#![doc = "px-cache — TTL cookie cache, DashMap default, Redis optional."]
-#![doc = ""]
-#![doc = "Phase 00 placeholder. CookieCache trait + InMemoryCookieCache land in Phase 01"]
-#![doc = "per SOW-DEL-004 and ADR-0008."]
+pub mod domain;
+pub mod infrastructure;
 
-pub const CRATE_NAME: &str = "px-cache";
+pub use domain::cookie_cache::CookieCache;
+pub use domain::metrics::CacheMetrics;
+pub use infrastructure::in_memory::InMemoryCookieCache;
