@@ -1,6 +1,6 @@
 [package]
 name         = "px-captcha"
-description  = "hCaptcha / reCAPTCHA gateway — STUB (ADR-0015, feature-gated)"
+description  = "hCaptcha / reCAPTCHA gateway — STUB v1 (ADR-0015)"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
@@ -16,3 +16,6 @@ active  = []
 workspace = true
 
 [dependencies]
+async-trait = { workspace = true }
+px-errors   = { path = "../px-errors" }
+px-pipeline = { path = "../px-pipeline" }

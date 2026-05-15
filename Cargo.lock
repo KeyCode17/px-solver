@@ -600,6 +600,11 @@ dependencies = [
 [[package]]
 name = "px-captcha"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "px-errors",
+ "px-pipeline",
+]
 
 [[package]]
 name = "px-cli"
@@ -608,6 +613,11 @@ version = "0.1.0"
 [[package]]
 name = "px-cloudflare"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "px-errors",
+ "px-pipeline",
+]
 
 [[package]]
 name = "px-core"
@@ -620,6 +630,11 @@ dependencies = [
 [[package]]
 name = "px-datadome"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "px-errors",
+ "px-pipeline",
+]
 
 [[package]]
 name = "px-detector"
@@ -668,6 +683,11 @@ version = "0.1.0"
 [[package]]
 name = "px-turnstile"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "px-errors",
+ "px-pipeline",
+]
 
 [[package]]
 name = "px-types"

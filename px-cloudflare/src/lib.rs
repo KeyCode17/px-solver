@@ -1,7 +1,35 @@
-#![doc = "px-cloudflare — Cloudflare challenge handler. STUB in v1."]
-#![doc = ""]
-#![doc = "Per ADR-0015, v1 ships only the trait impl skeleton; solve() returns"]
-#![doc = "AppError::NotImplemented. Real implementation deferred to v2."]
+use async_trait::async_trait;
+use px_errors::AppError;
+use px_pipeline::{ChallengeHandler, HandlerOutcome, PageHtml};
 
-pub const CRATE_NAME: &str = "px-cloudflare";
-pub const STATUS: &str = "stub";
+pub struct CloudflareHandler;
+
+impl CloudflareHandler {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Default for CloudflareHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait]
+impl ChallengeHandler for CloudflareHandler {
+    fn name(&self) -> &'static str {
+        "cloudflare"
+    }
+
+    async fn detects(&self, page: &PageHtml) -> Result<bool, AppError> {
+        let h = &page.html;
+        Ok(h.contains("cdn-cgi/challenge-platform")
+            || h.contains("cf-mitigated")
+            || h.contains("cf_clearance"))
+    }
+
+    async fn solve(&self, _page: &PageHtml) -> Result<HandlerOutcome, AppError> {
+        Ok(HandlerOutcome::not_implemented(self.name()))
+    }
+}
