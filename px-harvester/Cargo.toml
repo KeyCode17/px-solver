@@ -12,3 +12,10 @@ repository.workspace   = true
 workspace = true
 
 [dependencies]
+async-trait   = { workspace = true }
+chromiumoxide = { workspace = true }
+futures       = { workspace = true }
+px-core       = { path = "../px-core" }
+px-errors     = { path = "../px-errors" }
+tokio         = { workspace = true, features = ["sync", "time", "macros", "rt", "rt-multi-thread"] }
+tracing       = { workspace = true }

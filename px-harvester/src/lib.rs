@@ -1,6 +1,8 @@
-#![doc = "px-harvester — vendor-agnostic Chromium pool + stealth core."]
-#![doc = ""]
-#![doc = "Phase 00 placeholder. chromiumoxide pool + stealth bundle land in Phase 02"]
-#![doc = "per SOW-DEL-003a and ADRs 0004, 0005."]
+pub mod application;
+pub mod domain;
+pub mod infrastructure;
 
-pub const CRATE_NAME: &str = "px-harvester";
+pub use application::harvest_page::HarvestPage;
+pub use domain::harvester::{HarvestRequest, HarvestResult, Harvester};
+pub use domain::stealth::{StealthBundle, default_stealth_bundle};
+pub use infrastructure::chromiumoxide_pool::{ChromiumoxidePool, PoolConfig};
