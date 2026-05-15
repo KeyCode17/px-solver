@@ -10,7 +10,7 @@ pub mod solve_request;
 
 pub use api_key_hash::ApiKeyHash;
 pub use cache_key::CacheKey;
-pub use cookie_bundle::{CookieJarDelta, PxCookieBundle};
+pub use cookie_bundle::{CookieJarDelta, NamedCookie, PxCookieBundle};
 pub use fingerprint::Fingerprint;
 pub use named_token::NamedToken;
 pub use px_app_id::PxAppId;
