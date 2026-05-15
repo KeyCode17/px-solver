@@ -1,6 +1,5 @@
-#![doc = "px-server — composition root + Axum HTTP API."]
-#![doc = ""]
-#![doc = "Phase 00 placeholder. Bootstrap + handlers + middleware land in Phase 03"]
-#![doc = "per SOW-DEL-005 and ADR-0006."]
+pub mod application;
+pub mod infrastructure;
 
-pub const CRATE_NAME: &str = "px-server";
+pub use infrastructure::bootstrap::app_state::{AppState, AppStateConfig};
+pub use infrastructure::bootstrap::router::build_router;

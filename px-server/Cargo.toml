@@ -1,6 +1,6 @@
 [package]
 name         = "px-server"
-description  = "Composition root + Axum HTTP API for px-solver"
+description  = "Composition root + Axum HTTP API"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
@@ -19,3 +19,31 @@ path = "src/main.rs"
 path = "src/lib.rs"
 
 [dependencies]
+anyhow             = { workspace = true }
+async-trait        = { workspace = true }
+axum               = { workspace = true }
+px-auth            = { path = "../px-auth" }
+px-cache           = { path = "../px-cache" }
+px-core            = { path = "../px-core" }
+px-errors          = { path = "../px-errors" }
+px-harvester       = { path = "../px-harvester" }
+px-perimeterx      = { path = "../px-perimeterx" }
+px-pipeline        = { path = "../px-pipeline" }
+px-types           = { path = "../px-types" }
+serde              = { workspace = true }
+serde_json         = { workspace = true }
+tokio              = { workspace = true, features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
+tower              = { workspace = true }
+tower-http         = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+url                = { workspace = true }
+
+[dev-dependencies]
+argon2      = { workspace = true }
+async-trait = { workspace = true }
+http        = "1.1"
+px-core     = { path = "../px-core" }
+px-auth     = { path = "../px-auth" }
+tokio       = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tower       = { workspace = true, features = ["util"] }

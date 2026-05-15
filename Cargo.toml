@@ -40,6 +40,7 @@ chromiumoxide      = { version = "0.7", features = ["tokio-runtime"], default-fe
 futures            = "0.3"
 regex              = "1.11"
 subtle             = "2.6"
+url                = "2.5"
 axum               = { version = "0.8", features = ["macros"] }
 clap               = { version = "4.5", features = ["derive"] }
 dashmap            = "6.1"
