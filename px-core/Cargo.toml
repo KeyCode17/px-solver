@@ -12,3 +12,5 @@ repository.workspace   = true
 workspace = true
 
 [dependencies]
+serde = { workspace = true }
+uuid  = { workspace = true }
