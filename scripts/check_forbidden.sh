@@ -22,6 +22,7 @@ for f in "$@"; do
   case "$f" in
     px-cli/*|./px-cli/*|*/px-cli/*) allow_print=1 ;;
     xtask/*|./xtask/*|*/xtask/*) allow_print=1 ;;
+    *tests/*|*/tests/*) allow_print=1 ;;
     *) allow_print=0 ;;
   esac
 
