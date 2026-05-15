@@ -1,6 +1,6 @@
 [package]
 name         = "px-validation"
-description  = "Validated<T> extractor + validation framework for Axum"
+description  = "Validated<T> Axum extractor + Validate trait"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
@@ -12,3 +12,7 @@ repository.workspace   = true
 workspace = true
 
 [dependencies]
+axum       = { workspace = true }
+px-errors  = { path = "../px-errors" }
+serde      = { workspace = true }
+serde_json = { workspace = true }
