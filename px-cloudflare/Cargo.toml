@@ -1,0 +1,18 @@
+[package]
+name         = "px-cloudflare"
+description  = "Cloudflare challenge handler — STUB (ADR-0015, feature-gated)"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+authors.workspace      = true
+repository.workspace   = true
+
+[features]
+default = []
+active  = []
+
+[lints]
+workspace = true
+
+[dependencies]

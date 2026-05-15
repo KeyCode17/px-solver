@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "project": "px-solver",
+    "date": "2026-05-16",
+    "maturity": "standard",
+    "owner": "KeyCode17",
+    "owner_email": "m.daffa.karyudi@gmail.com",
+    "engagement_type": "self-funded research / open-source"
+  },
+  "summary": "Rust hybrid generic PerimeterX (HUMAN Security) cookie solver. Runs as a REST service that, given a target URL, returns a valid _px3 (and companion) cookie bundle plus matching User-Agent. Uses a chromiumoxide-driven Chromium pool as primary solver (browser harvester), DashMap + optional Redis as TTL cookie cache, and a stub for future native sensor-payload generation. Generic: detects PX appId at runtime from window._pxAppId / first-party /<appId>/init.js path.",
+  "context": {
+    "problem": "PX/HUMAN protects many sites with first-party reverse-proxy challenges. Real research, defensive testing, and authorized scraping workflows need a reliable way to obtain valid PX cookies without re-implementing the full stealth pipeline in every project.",
+    "primary_use_cases": [
+      "Authorized scraping of allowlisted public-data sites",
+      "Defensive security research / red-team training labs",
+      "CTF and educational reverse-engineering of bot-mitigation stacks"
+    ],
+    "out_of_scope_use_cases": [
+      "Account takeover, credential stuffing, or any form of unauthorized access",
+      "Bypassing access controls on private/authenticated content",
+      "DoS or high-volume abuse of target sites",
+      "Reselling solver capacity to anonymous third parties"
+    ],
+    "canary_target": "pedidosya.com.ar",
+    "px_findings": {
+      "app_id": "eT15wiaE",
+      "init_script": "/eT15wiaE/init.js",
+      "collector": "POST /eT15wiaE/xhr/b/s",
+      "gate_cookie": "_px3 (plus _pxhd, _pxvid, _pxde as companions)",
+      "block_signature": "HTML 403 page containing PX2/PXe6/PXJ6/etc. tokens"
+    }
+  },
+  "stakeholders": {
+    "owner": "Solo maintainer (KeyCode17)",
+    "users": "Self + future contributors / authorized researchers",
+    "approvers": "Owner"
+  },
+  "stack": {
+    "language": "Rust (edition 2024)",
+    "http": "axum",
+    "browser_driver": "chromiumoxide",
+    "cache": "DashMap (in-memory) + optional Redis",
+    "cli": "clap",
+    "telemetry": "tracing + tracing-subscriber",
+    "tests": "tokio-test + integration tests against canary",
+    "architecture_standard": "axum-best-practice (Clean Architecture, max 200 LOC/file, AppError, repository pattern)"
+  },
+  "deliverable_themes": [
+    "Cargo workspace scaffold conforming to axum-best-practice",
+    "PX detection module (appId extraction, gate-cookie taxonomy)",
+    "Browser harvester pool with manual CDP stealth patches",
+    "Cookie cache layer (TTL, Redis adapter trait)",
+    "REST API with API-key auth + per-domain allowlist + audit log",
+    "Native sensor generator stub (future-proof crate)",
+    "CLI for local solves",
+    "Canary integration test against pedidosya.com.ar",
+    "Threat model + operator deployment docs"
+  ],
+  "constraints": {
+    "budget_usd": 0,
+    "timeline": "Iterative; no hard deadline. MVP target: 4 weeks part-time.",
+    "compliance": [
+      "No PII storage beyond ephemeral solver cookies",
+      "Audit log every solve request (target domain, requester key id, outcome, latency)",
+      "Per-domain allowlist enforced server-side",
+      "Refuse solves for sites whose ToS the operator has not opted into (manual config)"
+    ],
+    "hosting": "Self-hosted; assumed Linux x86_64 with Chromium available."
+  },
+  "success_metrics": {
+    "canary_solve_rate": ">= 95% over 100 consecutive solves against pedidosya.com.ar from clean IP",
+    "median_solve_latency_ms": "<= 6000",
+    "cache_hit_ratio_post_warmup": ">= 70% under 1 req/s load",
+    "memory_footprint_per_worker_mb": "<= 350 (Chromium + Rust)"
+  },
+  "risks": [
+    "PX bumps init.js obfuscation → harvester may need stealth patch updates",
+    "IP reputation block on shared hosts → proxy support required for production",
+    "Dual-use abuse → API-key allowlist + audit log + ToS/legal docs",
+    "Chromium memory pressure → worker pool sizing + restart policy"
+  ]
+}

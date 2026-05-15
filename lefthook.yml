@@ -1,0 +1,129 @@
+min_version: 1.7.0
+
+pre-commit:
+  parallel: true
+  commands:
+    fmt:
+      glob: "*.rs"
+      run: cargo fmt --all -- --check
+      stage_fixed: true
+      fail_text: |
+        cargo fmt failed. Run `cargo fmt --all` and re-stage.
+
+    clippy:
+      glob: "*.rs"
+      run: |
+        cargo clippy --workspace --all-targets --all-features -- \
+          -D warnings \
+          -D clippy::unwrap_used \
+          -D clippy::expect_used \
+          -D clippy::panic \
+          -D clippy::dbg_macro \
+          -D clippy::todo \
+          -D clippy::unimplemented
+      fail_text: |
+        clippy failed. Fix the warnings above before committing.
+
+    loc-200:
+      glob: "*.rs"
+      run: bash scripts/check_loc.sh {staged_files}
+      fail_text: |
+        One or more Rust files exceed the 200-LOC rule (axum-best-practice).
+        Split the offending file before committing.
+
+    forbidden-patterns:
+      glob: "*.rs"
+      run: bash scripts/check_forbidden.sh {staged_files}
+      fail_text: |
+        Forbidden pattern detected (println!/eprintln!/dbg! outside px-cli,
+        or `unwrap()` / `expect()` outside test code).
+
+    cargo-toml-fmt:
+      glob: "Cargo.toml"
+      run: |
+        if command -v taplo >/dev/null 2>&1; then
+          taplo fmt --check {staged_files}
+        else
+          echo "taplo not installed; skipping Cargo.toml format check."
+        fi
+      fail_text: |
+        Cargo.toml formatting drift. Run `taplo fmt` and re-stage.
+
+    yaml-lint:
+      glob: "*.{yml,yaml}"
+      run: |
+        if command -v yamllint >/dev/null 2>&1; then
+          yamllint -d "{extends: default, rules: {line-length: disable, document-start: disable}}" {staged_files}
+        else
+          echo "yamllint not installed; skipping yaml check."
+        fi
+
+    docs-md-link-check:
+      glob: "docs/**/*.md"
+      run: |
+        if command -v markdown-link-check >/dev/null 2>&1; then
+          for f in {staged_files}; do
+            markdown-link-check -q "$f" || exit 1
+          done
+        else
+          echo "markdown-link-check not installed; skipping link check."
+        fi
+
+pre-push:
+  parallel: false
+  commands:
+    fmt:
+      run: cargo fmt --all -- --check
+      fail_text: |
+        cargo fmt failed before push. Run `cargo fmt --all` and recommit.
+
+    clippy:
+      run: |
+        cargo clippy --workspace --all-targets --all-features -- \
+          -D warnings \
+          -D clippy::unwrap_used \
+          -D clippy::expect_used \
+          -D clippy::panic \
+          -D clippy::dbg_macro \
+          -D clippy::todo \
+          -D clippy::unimplemented
+      fail_text: |
+        clippy failed on the full workspace before push. Fix warnings and recommit.
+
+    loc-200-workspace:
+      run: bash scripts/check_loc_workspace.sh
+      fail_text: |
+        One or more Rust files in the workspace exceed the 200-LOC rule. Split before pushing.
+
+    test:
+      glob: "*.{rs,toml}"
+      run: cargo test --workspace --all-features --no-fail-fast
+      fail_text: |
+        Tests failed. Fix before pushing.
+
+    audit:
+      run: |
+        if command -v cargo-audit >/dev/null 2>&1; then
+          cargo audit --deny warnings
+        else
+          echo "cargo-audit not installed; skipping advisory scan."
+        fi
+
+    deny:
+      run: |
+        if [ -f deny.toml ] && command -v cargo-deny >/dev/null 2>&1; then
+          cargo deny check
+        else
+          echo "cargo-deny not configured; skipping."
+        fi
+
+    canary-skipped:
+      run: |
+        echo "Canary integration test against pedidosya.com.ar is gated behind CI_CANARY=1 and is NOT run on push. Run manually: cargo xtask canary"
+
+commit-msg:
+  commands:
+    conventional:
+      run: bash scripts/check_commit_msg.sh {1}
+      fail_text: |
+        Commit message must follow Conventional Commits (feat:, fix:, chore:, docs:, refactor:, test:, build:, ci:, perf:, style:, revert:).

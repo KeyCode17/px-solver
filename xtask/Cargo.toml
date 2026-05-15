@@ -1,0 +1,22 @@
+[package]
+name         = "xtask"
+description  = "px-solver dev automation (bump, check-loc, release, canary)"
+version      = "0.0.0"
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+publish      = false
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "xtask"
+path = "src/main.rs"
+
+[dependencies]
+anyhow     = { workspace = true }
+clap       = { workspace = true }
+serde      = { workspace = true }
+serde_json = { workspace = true }
+walkdir    = { workspace = true }

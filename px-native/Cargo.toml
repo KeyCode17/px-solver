@@ -1,0 +1,14 @@
+[package]
+name         = "px-native"
+description  = "Native PerimeterX sensor generator — STUB (ADR-0010)"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+authors.workspace      = true
+repository.workspace   = true
+
+[lints]
+workspace = true
+
+[dependencies]

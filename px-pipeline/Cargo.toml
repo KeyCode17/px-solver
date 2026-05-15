@@ -1,0 +1,14 @@
+[package]
+name         = "px-pipeline"
+description  = "ChallengeHandler trait + ordered pipeline orchestrator"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+authors.workspace      = true
+repository.workspace   = true
+
+[lints]
+workspace = true
+
+[dependencies]
