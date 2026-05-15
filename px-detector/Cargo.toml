@@ -12,3 +12,5 @@ repository.workspace   = true
 workspace = true
 
 [dependencies]
+px-core = { path = "../px-core" }
+regex   = { workspace = true }
