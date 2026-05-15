@@ -1,6 +1,6 @@
 [package]
 name         = "px-cli"
-description  = "Operator CLI: solve, serve, detect, keys, allowlist"
+description  = "Operator CLI for px-solver"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
@@ -16,3 +16,12 @@ name = "px-cli"
 path = "src/main.rs"
 
 [dependencies]
+anyhow      = { workspace = true }
+argon2      = { workspace = true }
+clap        = { workspace = true }
+px-auth     = { path = "../px-auth" }
+px-detector = { path = "../px-detector" }
+serde       = { workspace = true }
+serde_yaml  = { workspace = true }
+tokio       = { workspace = true, features = ["macros", "rt-multi-thread", "fs", "io-std"] }
+uuid        = { workspace = true }

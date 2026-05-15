@@ -1117,6 +1117,17 @@ dependencies = [
 [[package]]
 name = "px-cli"
 version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "clap",
+ "px-auth",
+ "px-detector",
+ "serde",
+ "serde_yaml",
+ "tokio",
+ "uuid",
+]
 
 [[package]]
 name = "px-cloudflare"
