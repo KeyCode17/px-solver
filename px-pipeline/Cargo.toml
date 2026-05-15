@@ -1,6 +1,6 @@
 [package]
 name         = "px-pipeline"
-description  = "ChallengeHandler trait + ordered pipeline orchestrator"
+description  = "ChallengeHandler trait + ordered pipeline orchestrator (ADR-0014)"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
@@ -12,3 +12,10 @@ repository.workspace   = true
 workspace = true
 
 [dependencies]
+async-trait = { workspace = true }
+px-core     = { path = "../px-core" }
+px-errors   = { path = "../px-errors" }
+serde       = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }

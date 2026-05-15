@@ -1,6 +1,7 @@
-#![doc = "px-pipeline — ChallengeHandler trait + Chain-of-Responsibility orchestrator."]
-#![doc = ""]
-#![doc = "Phase 00 placeholder. Trait + run_pipeline land in Phase 01 per SOW-DEL-013"]
-#![doc = "and ADR-0014."]
+pub mod application;
+pub mod domain;
 
-pub const CRATE_NAME: &str = "px-pipeline";
+pub use application::run_pipeline::Pipeline;
+pub use domain::challenge_handler::{ChallengeHandler, HandlerName};
+pub use domain::handler_outcome::{HandlerMetrics, HandlerOutcome, HandlerStatus};
+pub use domain::page_html::PageHtml;
