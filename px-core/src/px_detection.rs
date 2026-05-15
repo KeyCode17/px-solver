@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PxDetection {
-    pub app_id: PxAppId,
-    pub init_js_path: String,
-    pub collector_base: String,
+    pub app_id: Option<PxAppId>,
+    pub init_js_path: Option<String>,
+    pub collector_base: Option<String>,
     pub mode: PxMode,
     pub block_class: BlockClass,
 }
@@ -26,7 +26,7 @@ pub enum BlockClass {
 }
 
 impl PxDetection {
-    pub fn new(
+    pub fn with_app_id(
         app_id: PxAppId,
         init_js_path: impl Into<String>,
         collector_base: impl Into<String>,
@@ -34,9 +34,19 @@ impl PxDetection {
         block_class: BlockClass,
     ) -> Self {
         Self {
-            app_id,
-            init_js_path: init_js_path.into(),
-            collector_base: collector_base.into(),
+            app_id: Some(app_id),
+            init_js_path: Some(init_js_path.into()),
+            collector_base: Some(collector_base.into()),
+            mode,
+            block_class,
+        }
+    }
+
+    pub fn marker_only(mode: PxMode, block_class: BlockClass) -> Self {
+        Self {
+            app_id: None,
+            init_js_path: None,
+            collector_base: None,
             mode,
             block_class,
         }
