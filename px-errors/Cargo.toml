@@ -12,4 +12,6 @@ repository.workspace   = true
 workspace = true
 
 [dependencies]
+axum      = { workspace = true }
+serde     = { workspace = true }
 thiserror = { workspace = true }
