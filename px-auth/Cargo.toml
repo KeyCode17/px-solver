@@ -1,6 +1,6 @@
 [package]
 name         = "px-auth"
-description  = "API-key auth + per-domain allowlist + audit log middleware"
+description  = "API-key + per-domain allowlist + audit log"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
@@ -12,3 +12,17 @@ repository.workspace   = true
 workspace = true
 
 [dependencies]
+argon2      = { workspace = true }
+async-trait = { workspace = true }
+px-core     = { path = "../px-core" }
+px-errors   = { path = "../px-errors" }
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+serde_yaml  = { workspace = true }
+subtle      = { workspace = true }
+tokio       = { workspace = true, features = ["sync", "macros", "rt", "fs", "io-util"] }
+tracing     = { workspace = true }
+
+[dev-dependencies]
+tokio    = { workspace = true, features = ["macros", "rt"] }
+tempfile = "3.13"
