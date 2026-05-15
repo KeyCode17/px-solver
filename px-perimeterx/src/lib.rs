@@ -1,5 +1,7 @@
-#![doc = "px-perimeterx — PerimeterX (HUMAN) challenge handler. v1 marquee."]
-#![doc = ""]
-#![doc = "Phase 00 placeholder. Handler impl lands in Phase 02 per SOW-DEL-003b."]
+pub mod application;
+pub mod domain;
+pub mod infrastructure;
 
-pub const CRATE_NAME: &str = "px-perimeterx";
+pub use application::solve_px::SolvePx;
+pub use domain::pxhd::{PxHd, PxHdParseError};
+pub use infrastructure::handler::PerimeterxHandler;

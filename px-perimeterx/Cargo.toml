@@ -12,3 +12,11 @@ repository.workspace   = true
 workspace = true
 
 [dependencies]
+async-trait  = { workspace = true }
+px-core      = { path = "../px-core" }
+px-detector  = { path = "../px-detector" }
+px-errors    = { path = "../px-errors" }
+px-harvester = { path = "../px-harvester" }
+px-pipeline  = { path = "../px-pipeline" }
+tracing      = { workspace = true }
+uuid         = { workspace = true }

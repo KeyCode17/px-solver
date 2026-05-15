@@ -1098,6 +1098,16 @@ dependencies = [
 [[package]]
 name = "px-perimeterx"
 version = "0.2.0"
+dependencies = [
+ "async-trait",
+ "px-core",
+ "px-detector",
+ "px-errors",
+ "px-harvester",
+ "px-pipeline",
+ "tracing",
+ "uuid",
+]
 
 [[package]]
 name = "px-pipeline"
