@@ -2,7 +2,7 @@
 
 Each deliverable's acceptance criteria are stated under [`003-sow-deliverables.md`](003-sow-deliverables.md). Project-level acceptance — i.e. "the MVP is done" — requires all of the following to hold simultaneously over a single 24-hour window:
 
-- **MVP-AC-1:** ≥ 95% solve success against the canary across 100 consecutive solves (`SOW-DEL-008`).
+- **MVP-AC-1:** ≥ 95% solve success across 100 consecutive solves against the active canary target (`SOW-DEL-008`). Per [ADR-0018](adr/0018-canary-scope-broaden-to-px-direct-targets.md), the canary is "any PX-direct allowlisted target with `tos_reviewed: true`"; the default in `cargo xtask soak` is `havenwellwithin.com`. Pedidosya's CF-fronted variant is deferred to R5.
 - **MVP-AC-2:** Median end-to-end `/v1/solve` latency ≤ 6 000 ms with the cache cold.
 - **MVP-AC-3:** Cache hit ratio ≥ 70% across the same window at 1 RPS sustained.
 - **MVP-AC-4:** Zero Chromium zombie processes after the 24-hour soak.

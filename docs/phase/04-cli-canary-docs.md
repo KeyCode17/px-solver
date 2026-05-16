@@ -36,7 +36,7 @@ Ship the operator experience: a CLI, an end-to-end canary test, and the document
 
 All of [`docs/008-sow-acceptance.md`](../008-sow-acceptance.md) MVP-AC-1..7 hold simultaneously over a single 24-hour window:
 
-1. ≥ 95% solve success on 100 consecutive canary solves.
+1. ≥ 95% solve success on 100 consecutive canary solves against any PX-direct allowlisted target ([ADR-0018](../adr/0018-canary-scope-broaden-to-px-direct-targets.md); default `havenwellwithin.com`).
 2. p50 `/v1/solve` ≤ 6 000 ms cold.
 3. Cache hit ratio ≥ 70% at 1 RPS sustained.
 4. Zero Chromium zombies after 24-hour soak.

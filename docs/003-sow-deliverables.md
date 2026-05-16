@@ -28,7 +28,7 @@ All deliverables target a 4-week part-time MVP cadence starting **2026-05-19**. 
 - **Description:** Implements the `ChallengeHandler` trait from `px-pipeline`. `detects()` inspects HTML for `_pxAppId` / `/<appId>/init.js`. `solve()` drives `px-harvester` through the PX flow and extracts `_px3`, `_pxhd`, `_pxvid`, `_pxde`, plus the active User-Agent. Uses `_pxhd` parser from [ADR-0012](adr/0012-pxhd-parser-and-synth.md).
 - **Depends on:** SOW-DEL-003a, SOW-DEL-013
 - **Target date:** 2026-06-03
-- **Acceptance criteria:** Against `pedidosya.com.ar` from a clean residential IP, ≥ 95% solve success across 50 consecutive solves; median solve latency ≤ 6 s.
+- **Acceptance criteria:** Per [ADR-0018](adr/0018-canary-scope-broaden-to-px-direct-targets.md), against any PX-direct allowlisted target (default `havenwellwithin.com`) from the operator's connection, ≥ 95% solve success across 50 consecutive solves; median solve latency ≤ 6 s. Pedidosya specifically is CF-fronted and is deferred to the R5 track per [ADR-0019](adr/0019-r5-track-deep-stealth-and-synthetic-profiles.md).
 
 ## SOW-DEL-004: Cookie cache layer (`px-cache`)
 
