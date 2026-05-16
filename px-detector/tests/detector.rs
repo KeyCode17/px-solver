@@ -47,6 +47,10 @@ fn non_px_control_returns_no() {
 }
 
 #[test]
-fn havenwellwithin_real_world_negative_returns_no() {
+fn havenwellwithin_unchallenged_response_returns_no() {
+    // The site IS PerimeterX-protected (appId PX12Ew76qT, captcha.px-cdn.net
+    // hosted-mode). PX did not fire on this captured GET — see
+    // px-research/notes/12Ew76qT/r0-notes.md. Detector correctly returns No
+    // because this specific HTML carries no markers.
     assert_eq!(detector().detect(HAVEN), Detected::No);
 }
