@@ -4,4 +4,5 @@ pub mod infrastructure;
 
 pub use application::solve_px::SolvePx;
 pub use domain::pxhd::{PxHd, PxHdParseError};
+pub use domain::sid::{Sid, SidError};
 pub use infrastructure::handler::PerimeterxHandler;
