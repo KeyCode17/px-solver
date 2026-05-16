@@ -40,10 +40,13 @@ tracing-subscriber = { workspace = true }
 url                = { workspace = true }
 
 [dev-dependencies]
-argon2      = { workspace = true }
-async-trait = { workspace = true }
-http        = "1.1"
-px-core     = { path = "../px-core" }
-px-auth     = { path = "../px-auth" }
-tokio       = { workspace = true, features = ["macros", "rt-multi-thread"] }
-tower       = { workspace = true, features = ["util"] }
+argon2        = { workspace = true }
+async-trait   = { workspace = true }
+chromiumoxide = { workspace = true }
+futures       = { workspace = true }
+http          = "1.1"
+px-core       = { path = "../px-core" }
+px-auth       = { path = "../px-auth" }
+serde         = { workspace = true }
+tokio         = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tower         = { workspace = true, features = ["util"] }
