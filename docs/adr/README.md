@@ -33,6 +33,7 @@ Format: [MADR](https://adr.github.io/madr/) lite. One file per decision, never e
 | [0017](0017-phase-aligned-versioning.md) | Phase-aligned semver: minor per phase 00–03, major at Phase 04 → 1.0.0 | Accepted | 2026-05-16 |
 | [0018](0018-canary-scope-broaden-to-px-direct-targets.md) | Canary scope broadens to any PX-direct allowlisted target for v1.0.0; pedidosya → R5 | Accepted | 2026-05-16 |
 | [0019](0019-r5-track-deep-stealth-and-synthetic-profiles.md) | Open R5 research track: stealth flags, stealth bundle v2, mouse paths, px-profiles, binary patcher, px-cloudflare upgrade | Accepted | 2026-05-16 |
+| [0020](0020-adopt-camoufox-via-fantoccini-geckodriver.md) | Adopt Camoufox (patched-Firefox) via fantoccini+geckodriver; subsumes R5.1/R5.2/R5.5; operator-installed binaries | Accepted | 2026-05-16 |
 
 ## Template
 
