@@ -36,6 +36,16 @@ enum Cmd {
         remote: Option<String>,
     },
     Canary,
+    Soak {
+        #[arg(long, default_value = "24h")]
+        duration: String,
+        #[arg(long, default_value_t = 1)]
+        rps: u32,
+        #[arg(long, default_value = "https://www.pedidosya.com.ar/")]
+        target: String,
+        #[arg(long, default_value = "http://127.0.0.1:8080")]
+        server: String,
+    },
     Phase {
         name: String,
         #[arg(long)]
@@ -67,6 +77,12 @@ fn main() -> Result<()> {
         Cmd::CheckLoc { max } => check_loc(max),
         Cmd::Release { remote } => release(remote),
         Cmd::Canary => canary(),
+        Cmd::Soak {
+            duration,
+            rps,
+            target,
+            server,
+        } => soak(duration, rps, target, server),
         Cmd::Phase {
             name,
             skip_gate,
@@ -265,6 +281,33 @@ fn canary() -> Result<()> {
     }
     println!("[xtask] canary passed");
     Ok(())
+}
+
+fn soak(duration: String, rps: u32, target: String, server: String) -> Result<()> {
+    if std::env::var("PX_SOAK_KEY").is_err() {
+        bail!("PX_SOAK_KEY must be set to '<id>:<secret>' (matching a record in config/keys.yaml)");
+    }
+    let script = Path::new("scripts/soak.sh");
+    if !script.exists() {
+        bail!("scripts/soak.sh not found; run from workspace root");
+    }
+    let status = Command::new("bash")
+        .arg(script)
+        .arg(&duration)
+        .arg(rps.to_string())
+        .arg(&target)
+        .env("PX_SERVER", &server)
+        .status()
+        .context("spawn scripts/soak.sh")?;
+    match status.code() {
+        Some(0) => {
+            println!("[xtask] soak finished: all MVP-AC-1..4 passed");
+            Ok(())
+        }
+        Some(1) => bail!("soak finished: one or more AC-1..4 failed (see evidence file)"),
+        Some(c) => bail!("soak harness errored (exit {c})"),
+        None => bail!("soak harness terminated by signal"),
+    }
 }
 
 fn run(cmd: &str, args: &[&str]) -> Result<()> {
