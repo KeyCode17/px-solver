@@ -63,6 +63,11 @@ TOTAL=0
 SOLVES_OK=0
 SOLVES_FAIL=0
 
+# Pattern is matched against the kernel `comm` field (process name,
+# 15-char max). Defaults to "headless_shell" (chromedp/chromiumoxide
+# headless binary). On Linux distros where chromiumoxide spawns
+# /usr/bin/chromium-browser the comm shows as "chromium-browse";
+# override via PX_SOAK_ZOMBIE_PATTERN=chromium to catch that.
 ZOMBIE_PATTERN="${PX_SOAK_ZOMBIE_PATTERN:-headless_shell}"
 
 finalize() {
@@ -70,7 +75,10 @@ finalize() {
   local end_iso
   end_iso=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   local zombies
-  zombies=$(pgrep -af "$ZOMBIE_PATTERN" | wc -l)
+  # pgrep without -f matches process NAME only (kernel truncates to 15
+  # chars); avoids the false-positive where pgrep's own command line
+  # contains the pattern. -c counts; never errors when zero matches.
+  zombies=$(pgrep -c "$ZOMBIE_PATTERN" || true)
   local final_metrics hit_ratio entries
   final_metrics=$(curl -fsS "$SERVER/v1/metrics" 2>/dev/null || echo "")
   hit_ratio=$(echo "$final_metrics" | awk '/^px_cache_hit_ratio /{print $2}')
