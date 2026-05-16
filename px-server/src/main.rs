@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use px_auth::{CheckAllowlist, StdoutAuditSink, VerifyKey, YamlAllowlistStore, YamlKeyStore};
+use px_cache::InMemoryCookieCache;
 use px_harvester::{ChromiumoxidePool, PoolConfig};
 use px_perimeterx::PerimeterxHandler;
 use px_server::application::solve_endpoint::PxSolveDispatcher;
@@ -36,6 +37,7 @@ async fn main() -> Result<()> {
         verify_key: Arc::new(VerifyKey::new(Arc::new(key_store))),
         check_allowlist: Arc::new(CheckAllowlist::new(Arc::new(allowlist_store))),
         dispatcher,
+        cache: Arc::new(InMemoryCookieCache::new()),
         audit: Arc::new(StdoutAuditSink::new()),
         build_sha: env!("CARGO_PKG_VERSION"),
     });

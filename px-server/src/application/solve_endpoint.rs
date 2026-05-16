@@ -73,3 +73,9 @@ pub fn domain_from_url(url: &str) -> Result<String, AppError> {
 pub fn cache_key_for(domain: &str, app_id: PxAppId, fp_key: u64) -> CacheKey {
     CacheKey::new(domain, app_id, fp_key)
 }
+
+pub fn sentinel_cache_key(domain: &str) -> Result<CacheKey, AppError> {
+    let app_id = PxAppId::new("Unknown000")
+        .map_err(|e| AppError::InternalError(format!("sentinel app_id invalid: {e}")))?;
+    Ok(CacheKey::new(domain, app_id, 0))
+}

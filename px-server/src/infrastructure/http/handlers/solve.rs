@@ -1,4 +1,4 @@
-use crate::application::solve_endpoint::domain_from_url;
+use crate::application::solve_endpoint::{SolveOutput, domain_from_url, sentinel_cache_key};
 use crate::infrastructure::bootstrap::app_state::AppState;
 use crate::infrastructure::http::dto::{CookieDto, SolveRequestDto, SolveResponseDto};
 use axum::Json;
@@ -33,34 +33,56 @@ pub async fn handle(
                 .fetch_add(1, Ordering::Relaxed);
         })?;
     state.metrics.solves_total.fetch_add(1, Ordering::Relaxed);
-    let result = state.dispatcher.solve(&payload.url).await;
-    let outcome = match &result {
-        Ok(_) => AuditOutcome::Solved,
-        Err(_) => {
-            state.metrics.solves_failed.fetch_add(1, Ordering::Relaxed);
-            AuditOutcome::HandlerFailed
-        }
+    let cache_key = sentinel_cache_key(&domain)?;
+    let cached = state.cache.get(&cache_key).await?;
+    let (out, cache_hit) = if let Some(bundle) = cached {
+        (
+            SolveOutput {
+                user_agent: bundle.user_agent.clone(),
+                bundle,
+                solve_ms: 0,
+                cache_hit: true,
+                handler: "cache".into(),
+            },
+            true,
+        )
+    } else {
+        let result = state.dispatcher.solve(&payload.url).await;
+        let solved = match result {
+            Ok(v) => v,
+            Err(e) => {
+                state.metrics.solves_failed.fetch_add(1, Ordering::Relaxed);
+                record_audit(
+                    &state,
+                    key_id.clone(),
+                    domain.clone(),
+                    started,
+                    AuditOutcome::HandlerFailed,
+                    None,
+                )
+                .await?;
+                return Err(e);
+            }
+        };
+        state
+            .cache
+            .put(cache_key.clone(), solved.bundle.clone())
+            .await?;
+        (solved, false)
     };
-    let elapsed_ms = started.elapsed().as_millis() as u64;
-    let now_unix = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    let handler_name = result.as_ref().ok().map(|r| r.handler.clone());
-    let event = AuditEvent {
-        timestamp_unix: now_unix,
+    record_audit(
+        &state,
         key_id,
-        target_domain: domain,
-        outcome,
-        latency_ms: elapsed_ms,
-        handler: handler_name,
-    };
-    state.audit.record(&event).await?;
-    let out = result?;
+        domain,
+        started,
+        AuditOutcome::Solved,
+        Some(out.handler.clone()),
+    )
+    .await?;
     let body = SolveResponseDto {
         user_agent: out.user_agent,
         solve_ms: out.solve_ms,
-        cache_hit: out.cache_hit,
+        cache_hit,
         handler: out.handler,
         cookies: out
             .bundle
@@ -76,6 +98,30 @@ pub async fn handle(
         expires_at: out.bundle.expires_at,
     };
     Ok(Json(SingleResponse::new(body, "solved")))
+}
+
+async fn record_audit(
+    state: &AppState,
+    key_id: String,
+    target_domain: String,
+    started: Instant,
+    outcome: AuditOutcome,
+    handler: Option<String>,
+) -> Result<(), AppError> {
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    let now_unix = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let event = AuditEvent {
+        timestamp_unix: now_unix,
+        key_id,
+        target_domain,
+        outcome,
+        latency_ms: elapsed_ms,
+        handler,
+    };
+    state.audit.record(&event).await
 }
 
 async fn verify_authorization(state: &AppState, headers: &HeaderMap) -> Result<String, AppError> {
