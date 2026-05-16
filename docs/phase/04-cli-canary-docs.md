@@ -44,6 +44,24 @@ All of [`docs/008-sow-acceptance.md`](../008-sow-acceptance.md) MVP-AC-1..7 hold
 6. Audit log: one record/solve, zero cookie payloads (`grep -E '_px3|_pxhd' audit.log` = 0).
 7. Threat model + dual-use policy signed off by owner.
 
+### Producing the evidence
+
+Items 1–4 (the soak block) are gathered with one command:
+
+```bash
+PX_SOAK_KEY=<key-id>:<secret> cargo xtask soak --duration 24h --rps 1
+```
+
+That writes `docs/verification/<date>-soak.md` with PASS/FAIL per AC.
+
+Item 5 is replayed by `cargo clippy ... && cargo audit` (see
+[`docs/verification/2026-05-16-mvp-ac-codeside.md`](../verification/2026-05-16-mvp-ac-codeside.md)).
+Item 6 is structurally guaranteed by `AuditEvent` having no cookie fields,
+documented in the same file.
+
+Item 7: copy `docs/verification/owner-signoff-template.md`, fill in name +
+date + the two doc commit SHAs, commit.
+
 After all 7 MVP-AC items are confirmed, run `cargo xtask phase 04` → version becomes `1.0.0` (major bump from `0.4.0`) per [ADR-0017](../adr/0017-phase-aligned-versioning.md). `xtask` does **not** verify the MVP acceptance checklist; that verification is the operator's responsibility before invoking the phase bump.
 
 ## Risks

@@ -9,3 +9,31 @@ Each deliverable's acceptance criteria are stated under [`003-sow-deliverables.m
 - **MVP-AC-5:** No clippy warnings, no `cargo audit` advisories at severity ≥ medium.
 - **MVP-AC-6:** Audit log contains exactly one entry per solve attempt with no cookie payload present (verified by `grep -E 'px3|pxhd' audit.log` returning zero matches).
 - **MVP-AC-7:** Threat model and dual-use policy documents signed off by the owner.
+
+## How to produce evidence
+
+MVP-AC-1..4 are collected by a single soak run (operator-side, runs from a
+clean residential IP):
+
+```bash
+# Terminal 1: start the server
+PX_KEYS=config/keys.yaml PX_ALLOWLIST=config/allowlist.yaml \
+  cargo run -p px-server
+
+# Terminal 2: run the soak (writes evidence to docs/verification/<date>-soak.md)
+PX_SOAK_KEY=<key-id>:<secret> cargo xtask soak --duration 24h --rps 1
+```
+
+`scripts/soak.sh` (invoked by the xtask subcommand) records per-request
+timings, samples `/v1/metrics` every minute, runs a `pgrep` zombie check
+on exit, and emits a markdown evidence file with PASS/FAIL verdicts for
+AC-1 through AC-4.
+
+MVP-AC-5 + AC-6 are code-side; see
+[`docs/verification/2026-05-16-mvp-ac-codeside.md`](verification/2026-05-16-mvp-ac-codeside.md).
+
+MVP-AC-7 is owner-side; see
+[`docs/verification/owner-signoff-template.md`](verification/owner-signoff-template.md).
+
+After all seven items hold, run `cargo xtask phase 04` per
+[ADR-0017](adr/0017-phase-aligned-versioning.md).
