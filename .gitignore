@@ -26,3 +26,4 @@ config/server.yaml
 !px-research/notes/**/*.md
 !px-research/sensor-maps/**/*.json
 !px-research/fingerprints/**/*.json
+!px-research/deobf/**/*.js
