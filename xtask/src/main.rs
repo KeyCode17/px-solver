@@ -41,7 +41,7 @@ enum Cmd {
         duration: String,
         #[arg(long, default_value_t = 1)]
         rps: u32,
-        #[arg(long, default_value = "https://www.pedidosya.com.ar/")]
+        #[arg(long, default_value = "https://www.havenwellwithin.com/")]
         target: String,
         #[arg(long, default_value = "http://127.0.0.1:8080")]
         server: String,

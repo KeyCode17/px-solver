@@ -23,7 +23,7 @@ set -euo pipefail
 
 DURATION="${1:-24h}"
 RPS="${2:-1}"
-TARGET_URL="${3:-https://www.pedidosya.com.ar/}"
+TARGET_URL="${3:-https://www.havenwellwithin.com/}"
 SERVER="${PX_SERVER:-http://127.0.0.1:8080}"
 
 if [ "${PX_SOAK_KEY:-}" = "" ]; then
