@@ -20,9 +20,9 @@ config/server.yaml
 
 .claude/
 
-px-research/init-js/**/*.js
-px-research/notes/**/*.md
-px-research/sensor-maps/**/*.json
-px-research/fingerprints/**/*.json
 !px-research/**/.gitkeep
 !px-research/README.md
+!px-research/init-js/**/*.js
+!px-research/notes/**/*.md
+!px-research/sensor-maps/**/*.json
+!px-research/fingerprints/**/*.json
