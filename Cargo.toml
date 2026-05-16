@@ -36,7 +36,7 @@ unsafe_code = "forbid"
 anyhow             = "1.0"
 argon2             = "0.5"
 async-trait        = "0.1"
-chromiumoxide      = { version = "0.7", features = ["tokio-runtime"], default-features = false }
+chromiumoxide      = { version = "0.9" }
 futures            = "0.3"
 regex              = "1.11"
 subtle             = "2.6"
