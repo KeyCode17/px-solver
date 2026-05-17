@@ -174,12 +174,16 @@ jobs:
       # a partial publish) doesn't fail at the pre-flight gate.
       - name: Dry-run layer 0 (skip already-published)
         shell: bash
+        env:
+          # crates.io API rejects requests without User-Agent (returns 403).
+          UA: "pxsolver-ci (https://github.com/KeyCode17/px-solver)"
         run: |
           set -euo pipefail
           VERSION="${{ needs.guard.outputs.version }}"
           for c in pxsolver-core pxsolver-types pxsolver-errors; do
-            code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            code=$(curl -sS -A "${UA}" -o /dev/null -w '%{http_code}' \
               "https://crates.io/api/v1/crates/${c}/${VERSION}" || echo "000")
+            echo "API check ${c} ${VERSION} → HTTP ${code}"
             if [[ "${code}" == "200" ]]; then
               echo "::notice::${c} ${VERSION} already on crates.io — skipping dry-run"
               continue
@@ -215,6 +219,8 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           PUBLISH_SLEEP: "615"   # 10 min + buffer; new-crate cap is 1/10min
+          # crates.io API rejects empty User-Agent with 403 — required.
+          UA: "pxsolver-ci (https://github.com/KeyCode17/px-solver)"
         shell: bash
         timeout-minutes: 240
         run: |
@@ -223,10 +229,10 @@ jobs:
 
           publish_one() {
             local crate="$1"
-            # crates.io API returns 200 for known version, 404 if not.
             local code
-            code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            code=$(curl -sS -A "${UA}" -o /dev/null -w '%{http_code}' \
               "https://crates.io/api/v1/crates/${crate}/${VERSION}" || echo "000")
+            echo "API check ${crate} ${VERSION} → HTTP ${code}"
             if [[ "${code}" == "200" ]]; then
               echo "::notice::${crate} ${VERSION} already on crates.io — skipping"
               return 0
