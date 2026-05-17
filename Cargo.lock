@@ -1429,8 +1429,11 @@ name = "px-cloudflare"
 version = "1.0.0"
 dependencies = [
  "async-trait",
+ "px-core",
  "px-errors",
+ "px-harvester",
  "px-pipeline",
+ "tokio",
 ]
 
 [[package]]

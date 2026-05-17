@@ -1,6 +1,6 @@
 [package]
 name         = "px-cloudflare"
-description  = "Cloudflare challenge handler — STUB v1 (ADR-0015)"
+description  = "Cloudflare challenge handler (ADR-0015, R5.7) — delegates to CF-bypass harvester (e.g. CamoufoxPool)"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
@@ -17,5 +17,10 @@ workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
+px-core     = { path = "../px-core" }
 px-errors   = { path = "../px-errors" }
+px-harvester = { path = "../px-harvester" }
 px-pipeline = { path = "../px-pipeline" }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
