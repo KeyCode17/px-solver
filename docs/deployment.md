@@ -63,15 +63,22 @@ Alternative: download the Camoufox binary directly from <https://github.com/daij
 - `PX_CAMOUFOX_BIN` — default `$HOME/.cache/camoufox/camoufox`
 - `PX_GECKODRIVER_BIN` — default `$HOME/.local/bin/geckodriver`
 
-px-server reads one more env var to decide which domains use the Camoufox path (see [ADR-0021](adr/0021-domain-based-handler-routing.md)):
+The set of domains routed through the Camoufox path is sourced from two places, unioned at startup:
 
-- `PX_CAMOUFOX_DOMAINS` — comma-separated list of DNS suffixes that should route to `CloudflareHandler::with_harvester(CamoufoxPool)` instead of the default Chromium-only `PerimeterxHandler`. Matching is DNS-suffix, so `pedidosya.com.ar` covers `www.pedidosya.com.ar`. Unset or empty → no routing override; all targets go through Chromium.
+1. **(preferred)** Allowlist entries with `handler: cloudflare` — see [ADR-0023](adr/0023-allowlist-handler-field-supersedes-env-csv.md).
+2. **(deprecated, retained for v1.x compatibility)** `PX_CAMOUFOX_DOMAINS` env CSV — see [ADR-0021](adr/0021-domain-based-handler-routing.md). Slated for removal in v2.x.
+
+Matching is DNS-suffix from either source, so `pedidosya.com.ar` covers `www.pedidosya.com.ar`. With neither source populated, all targets go through the Chromium-only path.
 
 ```bash
+# Preferred: edit allowlist.yaml to add `handler: cloudflare` to the entry
+./target/release/px-server
+
+# Deprecated alternative (env var only):
 PX_CAMOUFOX_DOMAINS=pedidosya.com.ar ./target/release/px-server
 ```
 
-Startup logs `Camoufox routing enabled` at info level when the routing path activates, and `falling back to Chromium-only dispatcher` at warn level if `PX_CAMOUFOX_DOMAINS` is set but the Camoufox/geckodriver binaries cannot be validated.
+Startup logs `Camoufox routing enabled` at info level when the routing path activates, and `falling back to Chromium-only dispatcher` at warn level if the env var or YAML field request CF routing but the Camoufox/geckodriver binaries cannot be validated.
 
 ### Licensing
 
@@ -103,9 +110,16 @@ entries:
   - domain: pedidosya.com.ar
     tos_reviewed: true
     justification: "Authorized research access — see internal doc <link>."
+    handler: cloudflare    # optional, see ADR-0023
+  - domain: www.havenwellwithin.com
+    tos_reviewed: true
+    justification: "Authorized PX research."
+    # handler omitted → uses default Chromium-only path
 ```
 
 Any entry without `tos_reviewed: true` or with empty `justification` causes server startup to fail (see [`px-auth`](../px-auth/) `AllowlistEntry::validate`).
+
+The optional `handler:` field (added in v1.1.x per [ADR-0023](adr/0023-allowlist-handler-field-supersedes-env-csv.md)) routes the entry's domain through a non-default `ChallengeHandler`. The only currently-recognized value is `cloudflare`, which routes to the Camoufox-backed CF-bypass handler. Omit the field for PX-direct targets.
 
 ### `config/server.yaml` (optional)
 

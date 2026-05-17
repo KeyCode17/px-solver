@@ -36,6 +36,7 @@ Format: [MADR](https://adr.github.io/madr/) lite. One file per decision, never e
 | [0020](0020-adopt-camoufox-via-fantoccini-geckodriver.md) | Adopt Camoufox (patched-Firefox) via fantoccini+geckodriver; subsumes R5.1/R5.2/R5.5; operator-installed binaries | Accepted | 2026-05-16 |
 | [0021](0021-domain-based-handler-routing.md) | Domain-based handler routing in the solve dispatcher (PX_CAMOUFOX_DOMAINS env CSV → CloudflareHandler) | Accepted | 2026-05-17 |
 | [0022](0022-readmit-pedidosya-to-canary-with-deep-stealth-budget.md) | Re-admit pedidosya to canary with relaxed AC-2 budget (15s median / 20s p95) for CF-fronted targets; amends ADR-0018 | Accepted | 2026-05-17 |
+| [0023](0023-allowlist-handler-field-supersedes-env-csv.md) | `handler:` field in allowlist.yaml supersedes `PX_CAMOUFOX_DOMAINS` env CSV; env retained as deprecated fallback through v1.x | Accepted | 2026-05-17 |
 
 ## Template
 
