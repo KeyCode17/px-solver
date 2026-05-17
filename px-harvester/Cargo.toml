@@ -1,5 +1,5 @@
 [package]
-name         = "px-harvester"
+name         = "pxsolver-harvester"
 description  = "Vendor-agnostic Chromium pool + stealth core (chromiumoxide)"
 version.workspace      = true
 edition.workspace      = true
@@ -15,7 +15,10 @@ workspace = true
 async-trait   = { workspace = true }
 chromiumoxide = { workspace = true }
 futures       = { workspace = true }
-px-core       = { path = "../px-core" }
-px-errors     = { path = "../px-errors" }
+px-core       = { workspace = true }
+px-errors     = { workspace = true }
 tokio         = { workspace = true, features = ["sync", "time", "macros", "rt", "rt-multi-thread"] }
 tracing       = { workspace = true }
+
+[lib]
+name = "px_harvester"

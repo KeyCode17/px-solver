@@ -1,5 +1,5 @@
 [package]
-name         = "px-perimeterx"
+name         = "pxsolver-perimeterx"
 description  = "PerimeterX challenge handler (v1 marquee)"
 version.workspace      = true
 edition.workspace      = true
@@ -13,10 +13,13 @@ workspace = true
 
 [dependencies]
 async-trait  = { workspace = true }
-px-core      = { path = "../px-core" }
-px-detector  = { path = "../px-detector" }
-px-errors    = { path = "../px-errors" }
-px-harvester = { path = "../px-harvester" }
-px-pipeline  = { path = "../px-pipeline" }
+px-core      = { workspace = true }
+px-detector  = { workspace = true }
+px-errors    = { workspace = true }
+px-harvester = { workspace = true }
+px-pipeline  = { workspace = true }
 tracing      = { workspace = true }
 uuid         = { workspace = true }
+
+[lib]
+name = "px_perimeterx"

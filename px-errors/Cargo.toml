@@ -1,5 +1,5 @@
 [package]
-name         = "px-errors"
+name         = "pxsolver-errors"
 description  = "Centralized AppError + IntoResponse for px-solver"
 version.workspace      = true
 edition.workspace      = true
@@ -15,3 +15,6 @@ workspace = true
 axum      = { workspace = true }
 serde     = { workspace = true }
 thiserror = { workspace = true }
+
+[lib]
+name = "px_errors"

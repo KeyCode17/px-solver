@@ -1,6 +1,7 @@
 [package]
 name         = "px-cli"
 description  = "Operator CLI for px-solver"
+publish      = false
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
@@ -19,8 +20,8 @@ path = "src/main.rs"
 anyhow      = { workspace = true }
 argon2      = { workspace = true }
 clap        = { workspace = true }
-px-auth     = { path = "../px-auth" }
-px-detector = { path = "../px-detector" }
+px-auth     = { workspace = true }
+px-detector = { workspace = true }
 serde       = { workspace = true }
 serde_yaml  = { workspace = true }
 tokio       = { workspace = true, features = ["macros", "rt-multi-thread", "fs", "io-std"] }

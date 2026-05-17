@@ -1,5 +1,5 @@
 [package]
-name         = "px-detector"
+name         = "pxsolver-detector"
 description  = "PerimeterX detection (HTML, JS globals, block-page)"
 version.workspace      = true
 edition.workspace      = true
@@ -12,5 +12,8 @@ repository.workspace   = true
 workspace = true
 
 [dependencies]
-px-core = { path = "../px-core" }
+px-core = { workspace = true }
 regex   = { workspace = true }
+
+[lib]
+name = "px_detector"

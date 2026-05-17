@@ -34,6 +34,27 @@ repository    = "https://github.com/KeyCode17/px-solver"
 unsafe_code = "forbid"
 
 [workspace.dependencies]
+# Internal workspace crates. Path keeps local dev fast; version is required
+# so `cargo publish` can resolve to the registry copy. Each entry's package
+# = pxsolver-* (the crates.io name); the local alias `px-*` is kept so
+# source files can continue to `use px_core::…` unchanged.
+px-core       = { path = "px-core",       version = "1.1.0", package = "pxsolver-core" }
+px-types      = { path = "px-types",      version = "1.1.0", package = "pxsolver-types" }
+px-errors     = { path = "px-errors",     version = "1.1.0", package = "pxsolver-errors" }
+px-validation = { path = "px-validation", version = "1.1.0", package = "pxsolver-validation" }
+px-cache      = { path = "px-cache",      version = "1.1.0", package = "pxsolver-cache" }
+px-detector   = { path = "px-detector",   version = "1.1.0", package = "pxsolver-detector" }
+px-harvester  = { path = "px-harvester",  version = "1.1.0", package = "pxsolver-harvester" }
+px-pipeline   = { path = "px-pipeline",   version = "1.1.0", package = "pxsolver-pipeline" }
+px-perimeterx = { path = "px-perimeterx", version = "1.1.0", package = "pxsolver-perimeterx" }
+px-cloudflare = { path = "px-cloudflare", version = "1.1.0", package = "pxsolver-cloudflare" }
+px-turnstile  = { path = "px-turnstile",  version = "1.1.0", package = "pxsolver-turnstile" }
+px-captcha    = { path = "px-captcha",    version = "1.1.0", package = "pxsolver-captcha" }
+px-datadome   = { path = "px-datadome",   version = "1.1.0", package = "pxsolver-datadome" }
+px-native     = { path = "px-native",     version = "1.1.0", package = "pxsolver-native" }
+px-auth       = { path = "px-auth",       version = "1.1.0", package = "pxsolver-auth" }
+px-camoufox   = { path = "px-camoufox",   version = "1.1.0", package = "pxsolver-camoufox" }
+
 anyhow             = "1.0"
 argon2             = "0.5"
 async-trait        = "0.1"

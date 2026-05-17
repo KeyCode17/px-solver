@@ -1,5 +1,5 @@
 [package]
-name         = "px-cloudflare"
+name         = "pxsolver-cloudflare"
 description  = "Cloudflare challenge handler (ADR-0015, R5.7) — delegates to CF-bypass harvester (e.g. CamoufoxPool)"
 version.workspace      = true
 edition.workspace      = true
@@ -17,10 +17,13 @@ workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
-px-core     = { path = "../px-core" }
-px-errors   = { path = "../px-errors" }
-px-harvester = { path = "../px-harvester" }
-px-pipeline = { path = "../px-pipeline" }
+px-core     = { workspace = true }
+px-errors   = { workspace = true }
+px-harvester = { workspace = true }
+px-pipeline = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }
+
+[lib]
+name = "px_cloudflare"

@@ -1,5 +1,5 @@
 [package]
-name         = "px-datadome"
+name         = "pxsolver-datadome"
 description  = "DataDome handler — STUB v1 (ADR-0015)"
 version.workspace      = true
 edition.workspace      = true
@@ -17,5 +17,8 @@ workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
-px-errors   = { path = "../px-errors" }
-px-pipeline = { path = "../px-pipeline" }
+px-errors   = { workspace = true }
+px-pipeline = { workspace = true }
+
+[lib]
+name = "px_datadome"

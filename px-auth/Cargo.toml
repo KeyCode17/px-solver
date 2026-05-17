@@ -1,5 +1,5 @@
 [package]
-name         = "px-auth"
+name         = "pxsolver-auth"
 description  = "API-key + per-domain allowlist + audit log"
 version.workspace      = true
 edition.workspace      = true
@@ -14,8 +14,8 @@ workspace = true
 [dependencies]
 argon2      = { workspace = true }
 async-trait = { workspace = true }
-px-core     = { path = "../px-core" }
-px-errors   = { path = "../px-errors" }
+px-core     = { workspace = true }
+px-errors   = { workspace = true }
 serde       = { workspace = true }
 serde_json  = { workspace = true }
 serde_yaml  = { workspace = true }
@@ -26,3 +26,6 @@ tracing     = { workspace = true }
 [dev-dependencies]
 tokio    = { workspace = true, features = ["macros", "rt"] }
 tempfile = "3.13"
+
+[lib]
+name = "px_auth"

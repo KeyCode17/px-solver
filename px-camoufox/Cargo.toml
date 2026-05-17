@@ -1,5 +1,5 @@
 [package]
-name         = "px-camoufox"
+name         = "pxsolver-camoufox"
 description  = "Camoufox (patched-Firefox) harvester via geckodriver + fantoccini (ADR-0020)"
 version.workspace      = true
 edition.workspace      = true
@@ -15,10 +15,13 @@ workspace = true
 async-trait   = { workspace = true }
 fantoccini    = { workspace = true }
 futures       = { workspace = true }
-px-core       = { path = "../px-core" }
-px-errors     = { path = "../px-errors" }
-px-harvester  = { path = "../px-harvester" }
+px-core       = { workspace = true }
+px-errors     = { workspace = true }
+px-harvester  = { workspace = true }
 serde         = { workspace = true }
 serde_json    = { workspace = true }
 tokio         = { workspace = true, features = ["sync", "time", "macros", "rt", "rt-multi-thread", "process", "net", "io-util"] }
 tracing       = { workspace = true }
+
+[lib]
+name = "px_camoufox"

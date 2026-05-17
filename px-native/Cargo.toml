@@ -1,5 +1,5 @@
 [package]
-name         = "px-native"
+name         = "pxsolver-native"
 description  = "Native PerimeterX sensor generator — STUB (ADR-0010)"
 version.workspace      = true
 edition.workspace      = true
@@ -13,5 +13,8 @@ workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
-px-core     = { path = "../px-core" }
-px-errors   = { path = "../px-errors" }
+px-core     = { workspace = true }
+px-errors   = { workspace = true }
+
+[lib]
+name = "px_native"

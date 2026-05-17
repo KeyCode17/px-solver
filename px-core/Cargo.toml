@@ -1,5 +1,5 @@
 [package]
-name         = "px-core"
+name         = "pxsolver-core"
 description  = "Pure domain types shared across px-solver crates"
 version.workspace      = true
 edition.workspace      = true
@@ -14,3 +14,6 @@ workspace = true
 [dependencies]
 serde = { workspace = true }
 uuid  = { workspace = true }
+
+[lib]
+name = "px_core"

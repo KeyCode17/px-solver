@@ -1,5 +1,5 @@
 [package]
-name         = "px-validation"
+name         = "pxsolver-validation"
 description  = "Validated<T> Axum extractor + Validate trait"
 version.workspace      = true
 edition.workspace      = true
@@ -13,6 +13,9 @@ workspace = true
 
 [dependencies]
 axum       = { workspace = true }
-px-errors  = { path = "../px-errors" }
+px-errors  = { workspace = true }
 serde      = { workspace = true }
 serde_json = { workspace = true }
+
+[lib]
+name = "px_validation"

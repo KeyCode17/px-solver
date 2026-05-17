@@ -1356,166 +1356,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "px-auth"
-version = "1.1.0"
-dependencies = [
- "argon2",
- "async-trait",
- "px-core",
- "px-errors",
- "serde",
- "serde_json",
- "serde_yaml",
- "subtle",
- "tempfile",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "px-cache"
-version = "1.1.0"
-dependencies = [
- "async-trait",
- "dashmap",
- "px-core",
- "px-errors",
- "serde",
- "tokio",
-]
-
-[[package]]
-name = "px-camoufox"
-version = "1.1.0"
-dependencies = [
- "async-trait",
- "fantoccini",
- "futures",
- "px-core",
- "px-errors",
- "px-harvester",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "px-captcha"
-version = "1.1.0"
-dependencies = [
- "async-trait",
- "px-errors",
- "px-pipeline",
-]
-
-[[package]]
 name = "px-cli"
 version = "1.1.0"
 dependencies = [
  "anyhow",
  "argon2",
  "clap",
- "px-auth",
- "px-detector",
+ "pxsolver-auth",
+ "pxsolver-detector",
  "serde",
  "serde_yaml",
  "tokio",
  "uuid",
-]
-
-[[package]]
-name = "px-cloudflare"
-version = "1.1.0"
-dependencies = [
- "async-trait",
- "px-core",
- "px-errors",
- "px-harvester",
- "px-pipeline",
- "tokio",
-]
-
-[[package]]
-name = "px-core"
-version = "1.1.0"
-dependencies = [
- "serde",
- "uuid",
-]
-
-[[package]]
-name = "px-datadome"
-version = "1.1.0"
-dependencies = [
- "async-trait",
- "px-errors",
- "px-pipeline",
-]
-
-[[package]]
-name = "px-detector"
-version = "1.1.0"
-dependencies = [
- "px-core",
- "regex",
-]
-
-[[package]]
-name = "px-errors"
-version = "1.1.0"
-dependencies = [
- "axum",
- "serde",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "px-harvester"
-version = "1.1.0"
-dependencies = [
- "async-trait",
- "chromiumoxide",
- "futures",
- "px-core",
- "px-errors",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "px-native"
-version = "1.1.0"
-dependencies = [
- "async-trait",
- "px-core",
- "px-errors",
-]
-
-[[package]]
-name = "px-perimeterx"
-version = "1.1.0"
-dependencies = [
- "async-trait",
- "px-core",
- "px-detector",
- "px-errors",
- "px-harvester",
- "px-pipeline",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "px-pipeline"
-version = "1.1.0"
-dependencies = [
- "async-trait",
- "px-core",
- "px-errors",
- "serde",
- "serde_json",
- "tokio",
 ]
 
 [[package]]
@@ -1529,16 +1381,16 @@ dependencies = [
  "chromiumoxide",
  "futures",
  "http 1.4.0",
- "px-auth",
- "px-cache",
- "px-camoufox",
- "px-cloudflare",
- "px-core",
- "px-errors",
- "px-harvester",
- "px-perimeterx",
- "px-pipeline",
- "px-types",
+ "pxsolver-auth",
+ "pxsolver-cache",
+ "pxsolver-camoufox",
+ "pxsolver-cloudflare",
+ "pxsolver-core",
+ "pxsolver-errors",
+ "pxsolver-harvester",
+ "pxsolver-perimeterx",
+ "pxsolver-pipeline",
+ "pxsolver-types",
  "serde",
  "serde_json",
  "tokio",
@@ -1550,16 +1402,164 @@ dependencies = [
 ]
 
 [[package]]
-name = "px-turnstile"
+name = "pxsolver-auth"
 version = "1.1.0"
 dependencies = [
+ "argon2",
  "async-trait",
- "px-errors",
- "px-pipeline",
+ "pxsolver-core",
+ "pxsolver-errors",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "subtle",
+ "tempfile",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
-name = "px-types"
+name = "pxsolver-cache"
+version = "1.1.0"
+dependencies = [
+ "async-trait",
+ "dashmap",
+ "pxsolver-core",
+ "pxsolver-errors",
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "pxsolver-camoufox"
+version = "1.1.0"
+dependencies = [
+ "async-trait",
+ "fantoccini",
+ "futures",
+ "pxsolver-core",
+ "pxsolver-errors",
+ "pxsolver-harvester",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pxsolver-captcha"
+version = "1.1.0"
+dependencies = [
+ "async-trait",
+ "pxsolver-errors",
+ "pxsolver-pipeline",
+]
+
+[[package]]
+name = "pxsolver-cloudflare"
+version = "1.1.0"
+dependencies = [
+ "async-trait",
+ "pxsolver-core",
+ "pxsolver-errors",
+ "pxsolver-harvester",
+ "pxsolver-pipeline",
+ "tokio",
+]
+
+[[package]]
+name = "pxsolver-core"
+version = "1.1.0"
+dependencies = [
+ "serde",
+ "uuid",
+]
+
+[[package]]
+name = "pxsolver-datadome"
+version = "1.1.0"
+dependencies = [
+ "async-trait",
+ "pxsolver-errors",
+ "pxsolver-pipeline",
+]
+
+[[package]]
+name = "pxsolver-detector"
+version = "1.1.0"
+dependencies = [
+ "pxsolver-core",
+ "regex",
+]
+
+[[package]]
+name = "pxsolver-errors"
+version = "1.1.0"
+dependencies = [
+ "axum",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "pxsolver-harvester"
+version = "1.1.0"
+dependencies = [
+ "async-trait",
+ "chromiumoxide",
+ "futures",
+ "pxsolver-core",
+ "pxsolver-errors",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pxsolver-native"
+version = "1.1.0"
+dependencies = [
+ "async-trait",
+ "pxsolver-core",
+ "pxsolver-errors",
+]
+
+[[package]]
+name = "pxsolver-perimeterx"
+version = "1.1.0"
+dependencies = [
+ "async-trait",
+ "pxsolver-core",
+ "pxsolver-detector",
+ "pxsolver-errors",
+ "pxsolver-harvester",
+ "pxsolver-pipeline",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "pxsolver-pipeline"
+version = "1.1.0"
+dependencies = [
+ "async-trait",
+ "pxsolver-core",
+ "pxsolver-errors",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "pxsolver-turnstile"
+version = "1.1.0"
+dependencies = [
+ "async-trait",
+ "pxsolver-errors",
+ "pxsolver-pipeline",
+]
+
+[[package]]
+name = "pxsolver-types"
 version = "1.1.0"
 dependencies = [
  "serde",
@@ -1567,11 +1567,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "px-validation"
+name = "pxsolver-validation"
 version = "1.1.0"
 dependencies = [
  "axum",
- "px-errors",
+ "pxsolver-errors",
  "serde",
  "serde_json",
 ]

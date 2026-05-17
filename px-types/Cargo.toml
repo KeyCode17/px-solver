@@ -1,5 +1,5 @@
 [package]
-name         = "px-types"
+name         = "pxsolver-types"
 description  = "Shared response shapes (SingleResponse, ListResponse, PaginationMeta)"
 version.workspace      = true
 edition.workspace      = true
@@ -16,3 +16,6 @@ serde = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
+
+[lib]
+name = "px_types"
