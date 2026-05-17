@@ -195,54 +195,62 @@ jobs:
           toolchain: "1.95"
       - uses: Swatinem/rust-cache@v2
 
-      - name: Publish layer 0 (no internal deps)
+      # crates.io rate-limits NEW crate names at ~1 per 10 minutes (a
+      # short burst of 5 is allowed). When publishing 16 fresh names in a
+      # single run we therefore have to:
+      #   1. Skip names that are already at this version (idempotent re-run).
+      #   2. Sleep 600s between every NEW upload to stay under the cap.
+      # The two layered loops below preserve dep ordering, but the inner
+      # loop is now a per-crate rate-aware step.
+      - name: Publish all 16 lib crates (rate-limit aware, idempotent)
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          PUBLISH_SLEEP: "615"   # 10 min + buffer; new-crate cap is 1/10min
         shell: bash
+        timeout-minutes: 240
         run: |
           set -euo pipefail
-          for c in pxsolver-core pxsolver-types pxsolver-errors; do
-            echo "::group::cargo publish -p ${c}"
-            cargo publish -p "${c}"
+          VERSION="${{ needs.guard.outputs.version }}"
+
+          publish_one() {
+            local crate="$1"
+            # crates.io API returns 200 for known version, 404 if not.
+            local code
+            code=$(curl -sS -o /dev/null -w '%{http_code}' \
+              "https://crates.io/api/v1/crates/${crate}/${VERSION}" || echo "000")
+            if [[ "${code}" == "200" ]]; then
+              echo "::notice::${crate} ${VERSION} already on crates.io — skipping"
+              return 0
+            fi
+            echo "::group::cargo publish -p ${crate}"
+            cargo publish -p "${crate}"
             echo "::endgroup::"
+            echo "Sleeping ${PUBLISH_SLEEP}s to stay under new-crate rate limit"
+            sleep "${PUBLISH_SLEEP}"
+          }
+
+          # Layer 0 (no internal deps)
+          for c in pxsolver-core pxsolver-types pxsolver-errors; do
+            publish_one "${c}"
           done
 
-      - name: Wait for crates.io index (layer 0)
-        run: sleep 45
-
-      - name: Publish layer 1 (deps on layer 0 only)
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
+          # Layer 1 (depends on layer 0)
           for c in pxsolver-validation pxsolver-cache pxsolver-detector \
                    pxsolver-harvester pxsolver-pipeline pxsolver-native \
                    pxsolver-auth; do
-            echo "::group::cargo publish -p ${c}"
-            cargo publish -p "${c}"
-            echo "::endgroup::"
+            publish_one "${c}"
           done
 
-      - name: Wait for crates.io index (layer 1)
-        run: sleep 45
-
-      - name: Publish layer 2 (deps on layer 0 + 1)
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
+          # Layer 2 (depends on layer 0 + 1)
           for c in pxsolver-perimeterx pxsolver-cloudflare pxsolver-turnstile \
                    pxsolver-captcha pxsolver-datadome pxsolver-camoufox; do
-            echo "::group::cargo publish -p ${c}"
-            cargo publish -p "${c}"
-            echo "::endgroup::"
+            publish_one "${c}"
           done
 
       - name: Summary
         run: |
-          echo "Published 16 pxsolver-* crates at v${{ needs.guard.outputs.version }} (${{ needs.guard.outputs.bump_kind }} bump)"
+          echo "Publish loop complete for v${{ needs.guard.outputs.version }} (${{ needs.guard.outputs.bump_kind }} bump)."
+          echo "Any crates already at this version were skipped idempotently."
 
   skipped-notice:
     name: crates.io publish skipped
