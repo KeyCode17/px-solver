@@ -63,7 +63,15 @@ Alternative: download the Camoufox binary directly from <https://github.com/daij
 - `PX_CAMOUFOX_BIN` — default `$HOME/.cache/camoufox/camoufox`
 - `PX_GECKODRIVER_BIN` — default `$HOME/.local/bin/geckodriver`
 
-Startup will refuse to wire CamoufoxPool if either path is missing.
+px-server reads one more env var to decide which domains use the Camoufox path (see [ADR-0021](adr/0021-domain-based-handler-routing.md)):
+
+- `PX_CAMOUFOX_DOMAINS` — comma-separated list of DNS suffixes that should route to `CloudflareHandler::with_harvester(CamoufoxPool)` instead of the default Chromium-only `PerimeterxHandler`. Matching is DNS-suffix, so `pedidosya.com.ar` covers `www.pedidosya.com.ar`. Unset or empty → no routing override; all targets go through Chromium.
+
+```bash
+PX_CAMOUFOX_DOMAINS=pedidosya.com.ar ./target/release/px-server
+```
+
+Startup logs `Camoufox routing enabled` at info level when the routing path activates, and `falling back to Chromium-only dispatcher` at warn level if `PX_CAMOUFOX_DOMAINS` is set but the Camoufox/geckodriver binaries cannot be validated.
 
 ### Licensing
 
