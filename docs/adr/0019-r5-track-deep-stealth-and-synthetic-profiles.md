@@ -1,9 +1,9 @@
 # 0019. R5 research track: deep stealth + synthetic profiles for CF-fronted PX
 
 - **Date:** 2026-05-16
-- **Status:** Accepted
+- **Status:** Closed 2026-05-17 — R5.1/R5.2/R5.5/R5.6 superseded by [ADR-0020](0020-adopt-camoufox-via-fantoccini-geckodriver.md); R5.3/R5.4 deferred (Camoufox subsumes for current targets); R5.7/R5.8/R5.9 delivered. See [`docs/retro/r5-retrospective.md`](../retro/r5-retrospective.md).
 - **Deciders:** KeyCode17
-- **Related:** ADR-0006, ADR-0013, ADR-0017, ADR-0018
+- **Related:** ADR-0006, ADR-0013, ADR-0017, ADR-0018, ADR-0020, ADR-0021, ADR-0022, ADR-0023
 
 ## Context
 
