@@ -1357,7 +1357,7 @@ dependencies = [
 
 [[package]]
 name = "px-auth"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "argon2",
  "async-trait",
@@ -1374,7 +1374,7 @@ dependencies = [
 
 [[package]]
 name = "px-cache"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "dashmap",
@@ -1386,7 +1386,7 @@ dependencies = [
 
 [[package]]
 name = "px-camoufox"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "fantoccini",
@@ -1402,7 +1402,7 @@ dependencies = [
 
 [[package]]
 name = "px-captcha"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "px-errors",
@@ -1411,7 +1411,7 @@ dependencies = [
 
 [[package]]
 name = "px-cli"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -1426,7 +1426,7 @@ dependencies = [
 
 [[package]]
 name = "px-cloudflare"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "px-core",
@@ -1438,7 +1438,7 @@ dependencies = [
 
 [[package]]
 name = "px-core"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "serde",
  "uuid",
@@ -1446,7 +1446,7 @@ dependencies = [
 
 [[package]]
 name = "px-datadome"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "px-errors",
@@ -1455,7 +1455,7 @@ dependencies = [
 
 [[package]]
 name = "px-detector"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "px-core",
  "regex",
@@ -1463,7 +1463,7 @@ dependencies = [
 
 [[package]]
 name = "px-errors"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "axum",
  "serde",
@@ -1472,7 +1472,7 @@ dependencies = [
 
 [[package]]
 name = "px-harvester"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "chromiumoxide",
@@ -1485,7 +1485,7 @@ dependencies = [
 
 [[package]]
 name = "px-native"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "px-core",
@@ -1494,7 +1494,7 @@ dependencies = [
 
 [[package]]
 name = "px-perimeterx"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "px-core",
@@ -1508,7 +1508,7 @@ dependencies = [
 
 [[package]]
 name = "px-pipeline"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "px-core",
@@ -1520,7 +1520,7 @@ dependencies = [
 
 [[package]]
 name = "px-server"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -1551,7 +1551,7 @@ dependencies = [
 
 [[package]]
 name = "px-turnstile"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "px-errors",
@@ -1560,7 +1560,7 @@ dependencies = [
 
 [[package]]
 name = "px-types"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1568,7 +1568,7 @@ dependencies = [
 
 [[package]]
 name = "px-validation"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "axum",
  "px-errors",
