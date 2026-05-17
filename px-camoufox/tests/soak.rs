@@ -133,9 +133,17 @@ async fn pedidosya_camoufox_soak() {
     let ac2 = if median <= 30_000 { "pass" } else { "fail" };
 
     let date = utc_date();
-    let evidence = PathBuf::from(format!(
-        "docs/verification/{date}-pedidosya-camoufox-soak.md"
-    ));
+    // Cargo runs tests with cwd = the package dir, so we resolve the
+    // workspace root via CARGO_MANIFEST_DIR/.. to put evidence under the
+    // canonical docs/verification/ tree at the repo root.
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
+    let evidence = workspace_root
+        .join("docs")
+        .join("verification")
+        .join(format!("{date}-pedidosya-camoufox-soak.md"));
     let _ = fs::create_dir_all(evidence.parent().unwrap());
     let mut body = String::new();
     body.push_str("# Camoufox soak — pedidosya\n\n");
