@@ -24,6 +24,8 @@ async-trait        = { workspace = true }
 axum               = { workspace = true }
 px-auth            = { path = "../px-auth" }
 px-cache           = { path = "../px-cache" }
+px-camoufox        = { path = "../px-camoufox" }
+px-cloudflare      = { path = "../px-cloudflare" }
 px-core            = { path = "../px-core" }
 px-errors          = { path = "../px-errors" }
 px-harvester       = { path = "../px-harvester" }

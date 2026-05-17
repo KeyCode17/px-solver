@@ -1531,6 +1531,8 @@ dependencies = [
  "http 1.4.0",
  "px-auth",
  "px-cache",
+ "px-camoufox",
+ "px-cloudflare",
  "px-core",
  "px-errors",
  "px-harvester",
