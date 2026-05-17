@@ -170,11 +170,20 @@ jobs:
         run: cargo check --workspace --all-features
       # Higher layers can't dry-run end-to-end (their deps don't exist on
       # crates.io yet); the chain self-validates during real publish below.
-      - name: Dry-run layer 0
+      # Already-published names are skipped so a recovery dispatch (after
+      # a partial publish) doesn't fail at the pre-flight gate.
+      - name: Dry-run layer 0 (skip already-published)
         shell: bash
         run: |
           set -euo pipefail
+          VERSION="${{ needs.guard.outputs.version }}"
           for c in pxsolver-core pxsolver-types pxsolver-errors; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' \
+              "https://crates.io/api/v1/crates/${c}/${VERSION}" || echo "000")
+            if [[ "${code}" == "200" ]]; then
+              echo "::notice::${c} ${VERSION} already on crates.io — skipping dry-run"
+              continue
+            fi
             echo "::group::cargo publish --dry-run -p ${c}"
             cargo publish --dry-run -p "${c}"
             echo "::endgroup::"
