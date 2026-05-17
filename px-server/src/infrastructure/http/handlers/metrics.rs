@@ -42,5 +42,8 @@ pub async fn handle(State(state): State<AppState>) -> String {
     out.push_str("# HELP px_cache_hit_ratio Cache hit ratio (0.0..=1.0)\n");
     out.push_str("# TYPE px_cache_hit_ratio gauge\n");
     out.push_str(&format!("px_cache_hit_ratio {:.4}\n", c.hit_ratio()));
+    out.push_str("# HELP px_solve_ms Per-handler solve latency histogram (ms)\n");
+    out.push_str("# TYPE px_solve_ms histogram\n");
+    m.solve_histogram.render("px_solve_ms", &mut out);
     out
 }

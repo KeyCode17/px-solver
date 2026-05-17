@@ -1,8 +1,8 @@
 use crate::application::solve_endpoint::SolveDispatcher;
+use crate::infrastructure::bootstrap::server_metrics::ServerMetrics;
 use px_auth::{AuditSink, CheckAllowlist, VerifyKey};
 use px_cache::CookieCache;
 use std::sync::Arc;
-use std::sync::atomic::AtomicU64;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -14,14 +14,6 @@ pub struct AppState {
     pub build_sha: &'static str,
     pub start_unix: u64,
     pub metrics: Arc<ServerMetrics>,
-}
-
-#[derive(Default)]
-pub struct ServerMetrics {
-    pub solves_total: AtomicU64,
-    pub solves_failed: AtomicU64,
-    pub auth_denied: AtomicU64,
-    pub allowlist_denied: AtomicU64,
 }
 
 pub struct AppStateConfig {

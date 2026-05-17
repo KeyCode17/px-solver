@@ -65,6 +65,10 @@ pub async fn handle(
             }
         };
         state
+            .metrics
+            .solve_histogram
+            .observe(&solved.handler, solved.solve_ms);
+        state
             .cache
             .put(cache_key.clone(), solved.bundle.clone())
             .await?;
