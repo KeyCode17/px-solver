@@ -1,9 +1,9 @@
 # 0022. Re-admit pedidosya to the canary set with a deep-stealth latency budget
 
 - **Date:** 2026-05-17
-- **Status:** Accepted (amends ADR-0018)
+- **Status:** Accepted (amends ADR-0018). Graduated from "provisional" 2026-05-17 after N=100 soak (`docs/verification/2026-05-17-pedidosya-camoufox-soak-n100.md`) confirmed 100/100 success with median 10,273ms / p95 10,989ms — both inside the relaxed budget below.
 - **Deciders:** KeyCode17
-- **Related:** ADR-0018 (canary scope), ADR-0020 (Camoufox), ADR-0021 (routing), R5.7/R5.8/R5.9
+- **Related:** ADR-0018 (canary scope), ADR-0020 (Camoufox), ADR-0021 (routing), ADR-0023 (allowlist handler field), R5.7/R5.8/R5.9
 
 ## Context
 
@@ -83,17 +83,20 @@ amortizes the per-harvest cost for repeat callers).
 
 - **Negative:**
   - Two AC-2 budgets means dashboards/alerts must split by handler.
-    Not currently a problem (metrics distinguishes handler) but a
-    follow-up.
-  - The 10-sample soak is small. Larger soak (N ≥100 over a working
-    week) is desirable before promoting pedidosya from canary to a
-    documented SLA target.
+    Closed: `px_solve_ms` histogram in v1.1.0 is labeled by handler.
 
 - **Follow-ups:**
-  - Larger pedidosya soak (N=100+) and append-evidence under
-    `docs/verification/`. Until that lands, treat pedidosya canary
-    status as "provisional".
-  - Metrics: expose `px_solve_ms_by_handler{handler="cloudflare"}`
-    histogram so the deep-stealth budget can be alerted on separately.
-  - Operator docs ([`deployment.md`](../deployment.md)) updated to
-    state the two-tier AC-2.
+  - ~~Larger pedidosya soak (N=100+)~~ **done** — see
+    [`docs/verification/2026-05-17-pedidosya-camoufox-soak-n100.md`](../verification/2026-05-17-pedidosya-camoufox-soak-n100.md):
+    100/100, median 10,273ms, p95 10,989ms, min 9,447ms, max 11,283ms.
+    Status moves from "provisional" to plain canary.
+  - ~~Per-handler `px_solve_ms` histogram~~ **done** — landed in
+    `px-server/src/infrastructure/bootstrap/server_metrics.rs` and
+    exposed at `/v1/metrics` as
+    `px_solve_ms_bucket{handler="...",le="..."}`. Buckets cover both
+    budgets (100ms → 30s + `+Inf`).
+  - ~~Operator docs updated~~ **done** in
+    [`deployment.md`](../deployment.md) "Performance budget"
+    subsection.
+  - Open: weekly cadence re-soak (cron-style) to catch upstream CF
+    drift before it shows in operator traffic. Currently manual.

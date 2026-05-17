@@ -86,7 +86,9 @@ Camoufox is MPL-2.0; geckodriver is MPL-2.0. Both are operator-installed and nev
 
 ### Performance budget
 
-The Camoufox-routed solve path has a different latency profile than the cheap Chromium-only path because each harvest spawns a fresh geckodriver + Camoufox subprocess. Per [ADR-0022](adr/0022-readmit-pedidosya-to-canary-with-deep-stealth-budget.md), the acceptance budget for CF-fronted targets (handler `cloudflare`) is **median ≤15s, p95 ≤20s**; the original 6s budget continues to apply to the default Chromium-only handler. Empirical 10-sample soak on pedidosya: median 10.6s, p95 11.1s — see [`docs/verification/2026-05-17-pedidosya-camoufox-soak.md`](verification/2026-05-17-pedidosya-camoufox-soak.md).
+The Camoufox-routed solve path has a different latency profile than the cheap Chromium-only path because each harvest spawns a fresh geckodriver + Camoufox subprocess. Per [ADR-0022](adr/0022-readmit-pedidosya-to-canary-with-deep-stealth-budget.md), the acceptance budget for CF-fronted targets (handler `cloudflare`) is **median ≤15s, p95 ≤20s**; the original 6s budget continues to apply to the default Chromium-only handler. Empirical 100-sample soak on pedidosya: **100/100 success, median 10.27s, p95 10.99s, range 9.45-11.28s** — see [`docs/verification/2026-05-17-pedidosya-camoufox-soak-n100.md`](verification/2026-05-17-pedidosya-camoufox-soak-n100.md) (10-sample run preserved at [`-n10.md`](verification/2026-05-17-pedidosya-camoufox-soak-n10.md)).
+
+The histogram metric `px_solve_ms_bucket{handler="..."}` at `/v1/metrics` lets you set per-handler alerts matching each budget.
 
 ## Configure
 
