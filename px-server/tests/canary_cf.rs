@@ -82,11 +82,13 @@ async fn pedidosya_solve_via_camoufox_path() {
             domain: "pedidosya.com.ar".into(),
             tos_reviewed: true,
             justification: "R5.8 canary".into(),
+            handler: Some("cloudflare".into()),
         },
         AllowlistEntry {
             domain: "www.pedidosya.com.ar".into(),
             tos_reviewed: true,
             justification: "R5.8 canary".into(),
+            handler: Some("cloudflare".into()),
         },
     ]));
     let audit = Arc::new(CountingAuditSink::default());

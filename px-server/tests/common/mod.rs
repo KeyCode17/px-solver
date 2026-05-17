@@ -86,6 +86,7 @@ pub fn build_state_with_dispatcher(
         domain: "pedidosya.com.ar".into(),
         tos_reviewed: true,
         justification: "test".into(),
+        handler: None,
     }]));
     AppState::new(AppStateConfig {
         verify_key: Arc::new(VerifyKey::new(key_store)),

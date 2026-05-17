@@ -54,6 +54,7 @@ async fn allowlist_admits_reviewed_entry() {
         domain: "pedidosya.com.ar".into(),
         tos_reviewed: true,
         justification: "research".into(),
+        handler: None,
     }]));
     let check = CheckAllowlist::new(store);
     let entry = check.execute("pedidosya.com.ar").await.expect("allow");
@@ -66,6 +67,7 @@ async fn allowlist_rejects_unreviewed_entry() {
         domain: "x.com".into(),
         tos_reviewed: false,
         justification: "test".into(),
+        handler: None,
     }]));
     let check = CheckAllowlist::new(store);
     assert!(check.execute("x.com").await.is_err());

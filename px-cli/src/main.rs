@@ -133,6 +133,7 @@ async fn allowlist(op: AllowlistCmd) -> Result<()> {
                 domain,
                 tos_reviewed: true,
                 justification,
+                handler: None,
             };
             append_allowlist(&path, entry).await
         }

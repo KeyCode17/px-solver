@@ -6,6 +6,13 @@ pub struct AllowlistEntry {
     pub domain: String,
     pub tos_reviewed: bool,
     pub justification: String,
+    /// Optional handler routing hint (ADR-0021/0023). When set to
+    /// `"cloudflare"`, the server's `RoutingDispatcher` routes this
+    /// domain to the CF-bypass path (CamoufoxPool) instead of the
+    /// default Chromium-only `perimeterx` handler. When absent, the
+    /// domain inherits the default handler.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub handler: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
