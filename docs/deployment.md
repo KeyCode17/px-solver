@@ -7,6 +7,7 @@ Operator guide for running `px-server` on a fresh Linux host. Pairs with [ADR-00
 - Linux x86_64 (other targets untested).
 - Rust 1.95 toolchain (pinned via [`rust-toolchain.toml`](../rust-toolchain.toml)).
 - Chromium or Google Chrome on `$PATH` (`/usr/bin/google-chrome` is found automatically).
+- Optional (Cloudflare-fronted targets): Camoufox binary + `geckodriver` — see [Camoufox (optional)](#camoufox-optional) below.
 - Optional: `cargo-audit`, `cargo-deny`, `taplo`, `yamllint`, `markdown-link-check` for lefthook checks.
 - A dedicated unprivileged Linux user is recommended (avoid running Chrome as root).
 
@@ -21,6 +22,52 @@ cargo build --release -p px-server -p px-cli
 ```
 
 The release artifacts are at `target/release/px-server` and `target/release/px-cli`.
+
+## Camoufox (optional)
+
+Required only for targets fronted by Cloudflare Bot Management (e.g. `pedidosya.com.ar`). Chromium handles PX-direct targets fine; Camoufox is the deep-stealth path documented in [ADR-0020](adr/0020-adopt-camoufox-via-fantoccini-geckodriver.md).
+
+**Important: runtime is pure Rust, not Python.** Camoufox is a patched-Firefox C++ binary. The `pip install camoufox` tool is a one-time installer that downloads the binary into `~/.cache/camoufox/`. After install, the runtime path is:
+
+```
+px-server (Rust)
+  └─ px-camoufox::CamoufoxPool (Rust, Harvester impl)
+       ├─ spawn `geckodriver` (Mozilla static binary)
+       └─ fantoccini WebDriver client (Rust crate)
+            └─ geckodriver launches Camoufox binary via `--binary`
+```
+
+No Python process is spawned per harvest. ADR-0001 (Rust-only runtime) holds.
+
+### Install
+
+```bash
+# 1. Camoufox binary (one-time; needs Python only for download)
+python3 -m venv /tmp/cf && source /tmp/cf/bin/activate
+pip install camoufox
+python -m camoufox fetch                  # downloads to ~/.cache/camoufox/camoufox
+deactivate && rm -rf /tmp/cf              # Python venv discardable
+
+# 2. geckodriver (static Mozilla binary)
+curl -L https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-v0.36.0-linux64.tar.gz \
+  | tar -xz -C ~/.local/bin
+chmod +x ~/.local/bin/geckodriver
+```
+
+Alternative: download the Camoufox binary directly from <https://github.com/daijro/camoufox/releases> and place at `~/.cache/camoufox/camoufox` — no Python required.
+
+### Configure
+
+`px-camoufox` reads two env vars (defaults shown):
+
+- `PX_CAMOUFOX_BIN` — default `$HOME/.cache/camoufox/camoufox`
+- `PX_GECKODRIVER_BIN` — default `$HOME/.local/bin/geckodriver`
+
+Startup will refuse to wire CamoufoxPool if either path is missing.
+
+### Licensing
+
+Camoufox is MPL-2.0; geckodriver is MPL-2.0. Both are operator-installed and never bundled in px-solver releases (no distribution obligation triggered).
 
 ## Configure
 
