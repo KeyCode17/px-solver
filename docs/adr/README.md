@@ -35,6 +35,7 @@ Format: [MADR](https://adr.github.io/madr/) lite. One file per decision, never e
 | [0019](0019-r5-track-deep-stealth-and-synthetic-profiles.md) | Open R5 research track: stealth flags, stealth bundle v2, mouse paths, px-profiles, binary patcher, px-cloudflare upgrade | Accepted | 2026-05-16 |
 | [0020](0020-adopt-camoufox-via-fantoccini-geckodriver.md) | Adopt Camoufox (patched-Firefox) via fantoccini+geckodriver; subsumes R5.1/R5.2/R5.5; operator-installed binaries | Accepted | 2026-05-16 |
 | [0021](0021-domain-based-handler-routing.md) | Domain-based handler routing in the solve dispatcher (PX_CAMOUFOX_DOMAINS env CSV → CloudflareHandler) | Accepted | 2026-05-17 |
+| [0022](0022-readmit-pedidosya-to-canary-with-deep-stealth-budget.md) | Re-admit pedidosya to canary with relaxed AC-2 budget (15s median / 20s p95) for CF-fronted targets; amends ADR-0018 | Accepted | 2026-05-17 |
 
 ## Template
 

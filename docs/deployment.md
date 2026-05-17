@@ -77,6 +77,10 @@ Startup logs `Camoufox routing enabled` at info level when the routing path acti
 
 Camoufox is MPL-2.0; geckodriver is MPL-2.0. Both are operator-installed and never bundled in px-solver releases (no distribution obligation triggered).
 
+### Performance budget
+
+The Camoufox-routed solve path has a different latency profile than the cheap Chromium-only path because each harvest spawns a fresh geckodriver + Camoufox subprocess. Per [ADR-0022](adr/0022-readmit-pedidosya-to-canary-with-deep-stealth-budget.md), the acceptance budget for CF-fronted targets (handler `cloudflare`) is **median ≤15s, p95 ≤20s**; the original 6s budget continues to apply to the default Chromium-only handler. Empirical 10-sample soak on pedidosya: median 10.6s, p95 11.1s — see [`docs/verification/2026-05-17-pedidosya-camoufox-soak.md`](verification/2026-05-17-pedidosya-camoufox-soak.md).
+
 ## Configure
 
 Create `config/` next to the binaries with three files:

@@ -1,9 +1,9 @@
 # 0018. Canary scope: broaden to PX-direct targets for v1.0.0
 
 - **Date:** 2026-05-16
-- **Status:** Accepted
+- **Status:** Accepted (amended by [ADR-0022](0022-readmit-pedidosya-to-canary-with-deep-stealth-budget.md) on 2026-05-17 — pedidosya re-admitted to canary set with relaxed AC-2 for CF-fronted targets)
 - **Deciders:** KeyCode17
-- **Related:** SOW §008, SOW-DEL-008, ADR-0006, ADR-0017
+- **Related:** SOW §008, SOW-DEL-008, ADR-0006, ADR-0017, ADR-0022
 
 ## Context
 
