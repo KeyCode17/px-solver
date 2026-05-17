@@ -37,11 +37,12 @@ impl ChallengeHandler for PerimeterxHandler {
             solve_ms: out.solve_ms,
             bytes_read: 0,
         };
-        Ok(HandlerOutcome::solved(
+        Ok(HandlerOutcome::solved_with_ua(
             self.name(),
             out.cookies,
             Vec::new(),
             metrics,
+            out.user_agent,
         ))
     }
 }

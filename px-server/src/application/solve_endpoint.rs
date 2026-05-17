@@ -54,7 +54,7 @@ impl SolveDispatcher for PxSolveDispatcher {
         );
         Ok(SolveOutput {
             bundle,
-            user_agent: String::new(),
+            user_agent: outcome.user_agent.unwrap_or_default(),
             solve_ms: outcome.metrics.solve_ms,
             cache_hit: false,
             handler: outcome.handler,

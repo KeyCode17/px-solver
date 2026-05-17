@@ -20,6 +20,8 @@ pub struct HandlerOutcome {
     pub cookies: CookieJarDelta,
     pub tokens: Vec<NamedToken>,
     pub metrics: HandlerMetrics,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub user_agent: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
@@ -37,6 +39,7 @@ impl HandlerOutcome {
             cookies: CookieJarDelta::default(),
             tokens: Vec::new(),
             metrics: HandlerMetrics::default(),
+            user_agent: None,
         }
     }
 
@@ -52,6 +55,24 @@ impl HandlerOutcome {
             cookies,
             tokens,
             metrics,
+            user_agent: None,
+        }
+    }
+
+    pub fn solved_with_ua(
+        handler: impl Into<String>,
+        cookies: CookieJarDelta,
+        tokens: Vec<NamedToken>,
+        metrics: HandlerMetrics,
+        user_agent: impl Into<String>,
+    ) -> Self {
+        Self {
+            handler: handler.into(),
+            status: HandlerStatus::Solved,
+            cookies,
+            tokens,
+            metrics,
+            user_agent: Some(user_agent.into()),
         }
     }
 
@@ -62,6 +83,49 @@ impl HandlerOutcome {
             cookies: CookieJarDelta::default(),
             tokens: Vec::new(),
             metrics: HandlerMetrics::default(),
+            user_agent: None,
         }
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::unwrap_used)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn solved_with_ua_sets_user_agent() {
+        let oc = HandlerOutcome::solved_with_ua(
+            "x",
+            CookieJarDelta::default(),
+            Vec::new(),
+            HandlerMetrics::default(),
+            "Mozilla/5.0",
+        );
+        assert_eq!(oc.status, HandlerStatus::Solved);
+        assert_eq!(oc.user_agent.as_deref(), Some("Mozilla/5.0"));
+    }
+
+    #[test]
+    fn solved_leaves_user_agent_none() {
+        let oc = HandlerOutcome::solved(
+            "x",
+            CookieJarDelta::default(),
+            Vec::new(),
+            HandlerMetrics::default(),
+        );
+        assert!(oc.user_agent.is_none());
+    }
+
+    #[test]
+    fn serde_skips_none_user_agent() {
+        let oc = HandlerOutcome::solved(
+            "x",
+            CookieJarDelta::default(),
+            Vec::new(),
+            HandlerMetrics::default(),
+        );
+        let json = serde_json::to_string(&oc).expect("serialize");
+        assert!(!json.contains("user_agent"));
     }
 }
