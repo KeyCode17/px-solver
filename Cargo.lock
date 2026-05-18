@@ -1549,10 +1549,12 @@ dependencies = [
  "pxsolver-core",
  "pxsolver-errors",
  "pxsolver-harvester",
+ "pxsolver-pipeline",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
+ "url",
 ]
 
 [[package]]
