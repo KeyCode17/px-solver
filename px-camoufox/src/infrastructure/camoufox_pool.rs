@@ -11,9 +11,12 @@ use tokio::process::Command;
 use tokio::sync::Semaphore;
 use tokio::time::sleep;
 
+use crate::infrastructure::session_pool::SessionPool;
+
 pub struct CamoufoxPool {
     pub(crate) config: CamoufoxConfig,
     pub(crate) permits: Arc<Semaphore>,
+    pub(crate) sessions: Arc<SessionPool>,
 }
 
 impl CamoufoxPool {
@@ -22,7 +25,12 @@ impl CamoufoxPool {
             .validate()
             .map_err(|e| AppError::InternalError(format!("camoufox config: {e}")))?;
         let permits = Arc::new(Semaphore::new(config.max_concurrent));
-        Ok(Self { config, permits })
+        let sessions = Arc::new(SessionPool::new(config.clone(), Duration::from_secs(300)));
+        Ok(Self {
+            config,
+            permits,
+            sessions,
+        })
     }
 
     /// Spawn geckodriver + Camoufox, hand the resulting webdriver
