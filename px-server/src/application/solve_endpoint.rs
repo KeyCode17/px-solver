@@ -46,15 +46,16 @@ impl SolveDispatcher for PxSolveDispatcher {
                 self.handler_name, outcome.status
             )));
         }
+        let user_agent = outcome.user_agent.clone().unwrap_or_default();
         let bundle = PxCookieBundle::new(
             outcome.cookies.set.clone(),
-            "px-harvester",
+            user_agent.clone(),
             SystemTime::now(),
             Duration::from_secs(600),
         );
         Ok(SolveOutput {
             bundle,
-            user_agent: outcome.user_agent.unwrap_or_default(),
+            user_agent,
             solve_ms: outcome.metrics.solve_ms,
             cache_hit: false,
             handler: outcome.handler,
