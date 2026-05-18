@@ -48,25 +48,32 @@ async fn run_through_session(
             &inner.client,
             &origin,
             navigate_timeout,
-            Duration::from_millis(4_000),
+            Duration::from_millis(2_500),
         )
         .await
         {
             tracing::warn!(error = %e, "session warmup failed; downstream will likely 403");
         } else {
             inner.warmed = true;
+            inner.last_visited = Some(origin);
         }
     }
+    // Navigate to the referer only when it actually differs from where
+    // the webdriver is currently parked. Saves a full 1-2s nav per
+    // fetch when consecutive callers share the same SPA page.
     if let Some(referer) = referer_header(&req)
         && !referer.is_empty()
-    {
-        let _ = navigate_with_wait(
+        && inner.last_visited.as_deref() != Some(referer.as_str())
+        && navigate_with_wait(
             &inner.client,
             &referer,
             navigate_timeout,
-            Duration::from_millis(2_000),
+            Duration::from_millis(1_000),
         )
-        .await;
+        .await
+        .is_ok()
+    {
+        inner.last_visited = Some(referer);
     }
 
     let outcome = if req.method().eq_ignore_ascii_case("GET") {
@@ -74,6 +81,9 @@ async fn run_through_session(
     } else {
         in_page_fetch(&inner.client, &req, request_timeout).await
     };
+    if req.method().eq_ignore_ascii_case("GET") {
+        inner.last_visited = Some(req.url.clone());
+    }
     inner.last_used = Instant::now();
     inner.fetch_count = inner.fetch_count.saturating_add(1);
     drop(inner);
