@@ -59,8 +59,48 @@ async fn main() -> Result<()> {
         .await
         .with_context(|| format!("bind {bind}"))?;
     tracing::info!(%bind, "px-server listening");
-    axum::serve(listener, app).await.context("axum serve")?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .context("axum serve")?;
+    tracing::info!("px-server stopped cleanly");
     Ok(())
+}
+
+/// Resolves when the process should begin a graceful shutdown.
+///
+/// Listens for SIGINT (Ctrl-C from a TTY) and, on Unix, SIGTERM (sent by
+/// systemd, Kubernetes, and `kill`). The first signal wins. Axum's
+/// `with_graceful_shutdown` then stops accepting new connections and lets
+/// in-flight `/v1/solve` requests finish before returning.
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        if let Err(e) = tokio::signal::ctrl_c().await {
+            tracing::warn!(error = %e, "ctrl_c signal handler install failed");
+        }
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        use tokio::signal::unix::{SignalKind, signal};
+        match signal(SignalKind::terminate()) {
+            Ok(mut s) => {
+                s.recv().await;
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "SIGTERM handler install failed");
+                std::future::pending::<()>().await;
+            }
+        }
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => tracing::info!("SIGINT received, draining in-flight solves"),
+        _ = terminate => tracing::info!("SIGTERM received, draining in-flight solves"),
+    }
 }
 
 /// Collect the set of domains that should route through the Cloudflare
