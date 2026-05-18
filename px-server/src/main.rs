@@ -3,13 +3,11 @@ use px_auth::{
     AllowlistStore, CheckAllowlist, StdoutAuditSink, VerifyKey, YamlAllowlistStore, YamlKeyStore,
 };
 use px_cache::InMemoryCookieCache;
-use px_camoufox::{CamoufoxConfig, CamoufoxPool};
-use px_cloudflare::CloudflareHandler;
 use px_harvester::{ChromiumoxidePool, Harvester, PoolConfig};
 use px_perimeterx::PerimeterxHandler;
 use px_pipeline::ChallengeHandler;
-use px_server::application::routing::{RoutingDispatcher, parse_camoufox_domains};
-use px_server::application::solve_endpoint::{PxSolveDispatcher, SolveDispatcher};
+use px_server::application::routing::parse_camoufox_domains;
+use px_server::infrastructure::bootstrap::dispatchers::build_dispatchers;
 use px_server::{AppState, AppStateConfig, build_router};
 use std::collections::BTreeSet;
 use std::env;
@@ -43,12 +41,13 @@ async fn main() -> Result<()> {
         Arc::new(PerimeterxHandler::new(Arc::clone(&harvester)));
 
     let cf_domains = resolve_cf_domains(allowlist_store.as_ref()).await?;
-    let dispatcher = build_dispatcher(px_handler, cf_domains)?;
+    let dispatchers = build_dispatchers(px_handler, cf_domains)?;
 
     let state = AppState::new(AppStateConfig {
         verify_key: Arc::new(VerifyKey::new(Arc::new(key_store))),
         check_allowlist: Arc::new(CheckAllowlist::new(Arc::clone(&allowlist_store))),
-        dispatcher,
+        dispatcher: dispatchers.solve,
+        fetch_dispatcher: dispatchers.fetch,
         cache: Arc::new(InMemoryCookieCache::new()),
         audit: Arc::new(StdoutAuditSink::new()),
         build_sha: env!("CARGO_PKG_VERSION"),
@@ -122,41 +121,4 @@ async fn resolve_cf_domains(store: &dyn AllowlistStore) -> Result<Vec<String>> {
         set.insert(d);
     }
     Ok(set.into_iter().collect())
-}
-
-/// Build the SolveDispatcher. If `cf_domains` is non-empty and both the
-/// Camoufox and geckodriver binaries validate at the configured paths,
-/// returns a RoutingDispatcher routing those domains to a CloudflareHandler
-/// backed by a CamoufoxPool. Otherwise returns the default Chromium-only
-/// dispatcher (logging a warn if domains were requested but binaries were
-/// unavailable).
-fn build_dispatcher(
-    default_handler: Arc<dyn ChallengeHandler>,
-    cf_domains: Vec<String>,
-) -> Result<Arc<dyn SolveDispatcher>> {
-    if cf_domains.is_empty() {
-        return Ok(Arc::new(PxSolveDispatcher::new(default_handler)));
-    }
-
-    let cfg = CamoufoxConfig::from_env();
-    if let Err(e) = cfg.validate() {
-        tracing::warn!(
-            error = %e,
-            domains = ?cf_domains,
-            "Cloudflare routes configured but Camoufox unavailable; falling back to Chromium-only dispatcher"
-        );
-        return Ok(Arc::new(PxSolveDispatcher::new(default_handler)));
-    }
-
-    let pool = CamoufoxPool::new(cfg).context("build CamoufoxPool")?;
-    let camoufox: Arc<dyn Harvester> = Arc::new(pool);
-    let cf_handler: Arc<dyn ChallengeHandler> =
-        Arc::new(CloudflareHandler::with_harvester(camoufox));
-
-    let mut router = RoutingDispatcher::new(default_handler);
-    for d in &cf_domains {
-        router = router.with_route(d.clone(), Arc::clone(&cf_handler));
-    }
-    tracing::info!(domains = ?cf_domains, "Camoufox routing enabled");
-    Ok(Arc::new(router))
 }

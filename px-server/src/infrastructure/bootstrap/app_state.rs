@@ -1,3 +1,4 @@
+use crate::application::fetch_endpoint::FetchDispatcher;
 use crate::application::solve_endpoint::SolveDispatcher;
 use crate::infrastructure::bootstrap::server_metrics::ServerMetrics;
 use px_auth::{AuditSink, CheckAllowlist, VerifyKey};
@@ -9,6 +10,7 @@ pub struct AppState {
     pub verify_key: Arc<VerifyKey>,
     pub check_allowlist: Arc<CheckAllowlist>,
     pub dispatcher: Arc<dyn SolveDispatcher>,
+    pub fetch_dispatcher: Arc<dyn FetchDispatcher>,
     pub cache: Arc<dyn CookieCache>,
     pub audit: Arc<dyn AuditSink>,
     pub build_sha: &'static str,
@@ -20,6 +22,7 @@ pub struct AppStateConfig {
     pub verify_key: Arc<VerifyKey>,
     pub check_allowlist: Arc<CheckAllowlist>,
     pub dispatcher: Arc<dyn SolveDispatcher>,
+    pub fetch_dispatcher: Arc<dyn FetchDispatcher>,
     pub cache: Arc<dyn CookieCache>,
     pub audit: Arc<dyn AuditSink>,
     pub build_sha: &'static str,
@@ -35,6 +38,7 @@ impl AppState {
             verify_key: cfg.verify_key,
             check_allowlist: cfg.check_allowlist,
             dispatcher: cfg.dispatcher,
+            fetch_dispatcher: cfg.fetch_dispatcher,
             cache: cfg.cache,
             audit: cfg.audit,
             build_sha: cfg.build_sha,

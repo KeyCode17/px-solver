@@ -13,6 +13,7 @@ use px_auth::{
 use px_cache::InMemoryCookieCache;
 use px_core::NamedCookie;
 use px_errors::AppError;
+use px_server::application::fetch_endpoint::RoutingFetchDispatcher;
 use px_server::application::solve_endpoint::{SolveDispatcher, SolveOutput};
 use px_server::{AppState, AppStateConfig};
 use std::sync::Arc;
@@ -92,6 +93,7 @@ pub fn build_state_with_dispatcher(
         verify_key: Arc::new(VerifyKey::new(key_store)),
         check_allowlist: Arc::new(CheckAllowlist::new(allowlist_store)),
         dispatcher,
+        fetch_dispatcher: Arc::new(RoutingFetchDispatcher::new(None)),
         cache: Arc::new(InMemoryCookieCache::new()),
         audit,
         build_sha: "test",
