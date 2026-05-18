@@ -156,7 +156,7 @@ jobs:
                  --title "v${{ needs.guard.outputs.version }}"
 
   pre-flight:
-    name: pre-flight (check + layer-0 dry-run)
+    name: pre-flight (cargo check)
     needs: guard
     if: needs.guard.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
@@ -168,30 +168,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: cargo check --workspace
         run: cargo check --workspace --all-features
-      # Higher layers can't dry-run end-to-end (their deps don't exist on
-      # crates.io yet); the chain self-validates during real publish below.
-      # Already-published names are skipped so a recovery dispatch (after
-      # a partial publish) doesn't fail at the pre-flight gate.
-      - name: Dry-run layer 0 (skip already-published)
-        shell: bash
-        env:
-          # crates.io API rejects requests without User-Agent (returns 403).
-          UA: "pxsolver-ci (https://github.com/KeyCode17/px-solver)"
-        run: |
-          set -euo pipefail
-          VERSION="${{ needs.guard.outputs.version }}"
-          for c in pxsolver-core pxsolver-types pxsolver-errors; do
-            code=$(curl -sS -A "${UA}" -o /dev/null -w '%{http_code}' \
-              "https://crates.io/api/v1/crates/${c}/${VERSION}" || echo "000")
-            echo "API check ${c} ${VERSION} → HTTP ${code}"
-            if [[ "${code}" == "200" ]]; then
-              echo "::notice::${c} ${VERSION} already on crates.io — skipping dry-run"
-              continue
-            fi
-            echo "::group::cargo publish --dry-run -p ${c}"
-            cargo publish --dry-run -p "${c}"
-            echo "::endgroup::"
-          done
 
   crates-publish:
     name: publish to crates.io
@@ -208,59 +184,79 @@ jobs:
           toolchain: "1.95"
       - uses: Swatinem/rust-cache@v2
 
-      # crates.io rate-limits NEW crate names at ~1 per 10 minutes (a
-      # short burst of 5 is allowed). When publishing 16 fresh names in a
-      # single run we therefore have to:
-      #   1. Skip names that are already at this version (idempotent re-run).
-      #   2. Sleep 600s between every NEW upload to stay under the cap.
-      # The two layered loops below preserve dep ordering, but the inner
-      # loop is now a per-crate rate-aware step.
+      # Publish strategy (ported from rust-ai-surfer):
+      #   * `cargo search` is the skip-check (no User-Agent header drama like
+      #     the crates.io REST API has).
+      #   * Per-crate retry loop with 429-aware backoff (420s for "Too Many
+      #     Requests", attempt*60s otherwise).
+      #   * `cargo publish` stderr is parsed: "already exists on crates.io"
+      #     and "already uploaded" both count as success (idempotent re-runs).
+      #   * Failures don't abort the loop — they go into FAILED[] and the
+      #     job exits non-zero at the end with a list.
+      #   * 12s gap between crates is enough; the rate limit only bites on
+      #     NEW names, and the retry loop absorbs the 1/10min cap when hit.
       - name: Publish all 16 lib crates (rate-limit aware, idempotent)
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-          PUBLISH_SLEEP: "615"   # 10 min + buffer; new-crate cap is 1/10min
-          # crates.io API rejects empty User-Agent with 403 — required.
-          UA: "pxsolver-ci (https://github.com/KeyCode17/px-solver)"
         shell: bash
         timeout-minutes: 240
         run: |
-          set -euo pipefail
+          set +e
+          set +o pipefail
+          if [ -z "${CARGO_REGISTRY_TOKEN:-}" ]; then
+            echo "::error::CARGO_REGISTRY_TOKEN is empty"
+            exit 1
+          fi
           VERSION="${{ needs.guard.outputs.version }}"
-
-          publish_one() {
-            local crate="$1"
-            local code
-            code=$(curl -sS -A "${UA}" -o /dev/null -w '%{http_code}' \
-              "https://crates.io/api/v1/crates/${crate}/${VERSION}" || echo "000")
-            echo "API check ${crate} ${VERSION} → HTTP ${code}"
-            if [[ "${code}" == "200" ]]; then
-              echo "::notice::${crate} ${VERSION} already on crates.io — skipping"
-              return 0
+          ORDER=(
+            pxsolver-core pxsolver-types pxsolver-errors
+            pxsolver-validation pxsolver-cache pxsolver-detector
+            pxsolver-harvester pxsolver-pipeline pxsolver-native pxsolver-auth
+            pxsolver-perimeterx pxsolver-cloudflare pxsolver-turnstile
+            pxsolver-captcha pxsolver-datadome pxsolver-camoufox
+          )
+          echo "[info] target version $VERSION"
+          FAILED=()
+          for crate in "${ORDER[@]}"; do
+            search_out=$(cargo search "$crate" --limit 1 2>/dev/null || true)
+            published=$(echo "$search_out" | grep -E "^$crate = " | sed -E 's/.*"([^"]+)".*/\1/' || true)
+            if [ "$published" = "$VERSION" ]; then
+              echo "[skip] $crate $VERSION already published"
+              continue
             fi
-            echo "::group::cargo publish -p ${crate}"
-            cargo publish -p "${crate}"
-            echo "::endgroup::"
-            echo "Sleeping ${PUBLISH_SLEEP}s to stay under new-crate rate limit"
-            sleep "${PUBLISH_SLEEP}"
-          }
-
-          # Layer 0 (no internal deps)
-          for c in pxsolver-core pxsolver-types pxsolver-errors; do
-            publish_one "${c}"
+            echo "[publish] $crate -> crates.io as $VERSION"
+            ok=0
+            for attempt in 1 2 3 4 5 6; do
+              out=$(cargo publish -p "$crate" --token "$CARGO_REGISTRY_TOKEN" 2>&1)
+              rc=$?
+              echo "$out"
+              if [ "$rc" -eq 0 ]; then
+                echo "[ok] $crate"
+                ok=1
+                break
+              fi
+              if echo "$out" | grep -qE "already exists on crates\.io|already uploaded"; then
+                echo "[ok] $crate (already on crates.io index, treating as success)"
+                ok=1
+                break
+              fi
+              if echo "$out" | grep -q "429 Too Many Requests"; then
+                wait_seconds=420
+              else
+                wait_seconds=$(( attempt * 60 ))
+              fi
+              echo "::warning::publish $crate failed (rc=$rc); sleeping ${wait_seconds}s (attempt $attempt/6)"
+              sleep "$wait_seconds"
+            done
+            if [ "$ok" -eq 0 ]; then
+              FAILED+=("$crate")
+            fi
+            sleep 12
           done
-
-          # Layer 1 (depends on layer 0)
-          for c in pxsolver-validation pxsolver-cache pxsolver-detector \
-                   pxsolver-harvester pxsolver-pipeline pxsolver-native \
-                   pxsolver-auth; do
-            publish_one "${c}"
-          done
-
-          # Layer 2 (depends on layer 0 + 1)
-          for c in pxsolver-perimeterx pxsolver-cloudflare pxsolver-turnstile \
-                   pxsolver-captcha pxsolver-datadome pxsolver-camoufox; do
-            publish_one "${c}"
-          done
+          if [ "${#FAILED[@]}" -gt 0 ]; then
+            echo "::error::${#FAILED[@]} crate(s) failed to publish: ${FAILED[*]}"
+            exit 1
+          fi
 
       - name: Summary
         run: |
