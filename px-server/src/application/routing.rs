@@ -71,15 +71,16 @@ impl SolveDispatcher for RoutingDispatcher {
                 outcome.status
             )));
         }
+        let user_agent = outcome.user_agent.clone().unwrap_or_default();
         let bundle = PxCookieBundle::new(
             outcome.cookies.set.clone(),
-            "px-harvester",
+            user_agent.clone(),
             SystemTime::now(),
             Duration::from_secs(600),
         );
         Ok(SolveOutput {
             bundle,
-            user_agent: outcome.user_agent.unwrap_or_default(),
+            user_agent,
             solve_ms: outcome.metrics.solve_ms,
             cache_hit: false,
             handler: outcome.handler,
@@ -161,6 +162,17 @@ mod tests {
             .await
             .expect("solve");
         assert_eq!(out.handler, "cloudflare");
+    }
+
+    /// Regression: the cookie bundle's `user_agent` must carry the real
+    /// harvester UA (so cache-hit replies preserve it), not a literal
+    /// placeholder string.
+    #[tokio::test]
+    async fn bundle_user_agent_matches_harvester() {
+        let d = RoutingDispatcher::new(Arc::new(StaticHandler { name: "perimeterx" }));
+        let out = d.solve("https://example.com/").await.expect("solve");
+        assert_eq!(out.user_agent, "ua");
+        assert_eq!(out.bundle.user_agent, "ua");
     }
 
     #[test]
