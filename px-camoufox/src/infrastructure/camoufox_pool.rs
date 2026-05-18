@@ -25,7 +25,15 @@ impl CamoufoxPool {
             .validate()
             .map_err(|e| AppError::InternalError(format!("camoufox config: {e}")))?;
         let permits = Arc::new(Semaphore::new(config.max_concurrent));
-        let sessions = Arc::new(SessionPool::new(config.clone(), Duration::from_secs(300)));
+        let max_per_domain = std::env::var("PX_FETCH_MAX_PER_DOMAIN")
+            .ok()
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(2);
+        let sessions = Arc::new(SessionPool::new(
+            config.clone(),
+            Duration::from_secs(300),
+            max_per_domain,
+        ));
         Ok(Self {
             config,
             permits,

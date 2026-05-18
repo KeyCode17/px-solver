@@ -31,6 +31,10 @@ pub(crate) struct Inner {
     /// `true` after the first homepage navigation has happened, so
     /// subsequent fetches skip the warm-up step.
     pub(crate) warmed: bool,
+    /// The URL the webdriver is currently parked on. Used to skip a
+    /// redundant referer navigation when the new request would land
+    /// on the same page anyway.
+    pub(crate) last_visited: Option<String>,
 }
 
 impl PersistentSession {
@@ -63,6 +67,7 @@ impl PersistentSession {
                 last_used: Instant::now(),
                 fetch_count: 0,
                 warmed: false,
+                last_visited: None,
             }),
         })
     }

@@ -26,11 +26,14 @@ pub(crate) async fn navigate_and_read(
     req: &FetchRequest,
     navigate_timeout: Duration,
 ) -> Result<FetchTriple, AppError> {
+    // Warm session has CF clearance already; the new navigation only
+    // needs DOM to settle before we read body text. 1s is enough for
+    // the niles JSON endpoint to render `document.body.innerText`.
     navigate_with_wait(
         client,
         &req.url,
         navigate_timeout,
-        Duration::from_millis(3_500),
+        Duration::from_millis(1_000),
     )
     .await?;
     let body_val = client

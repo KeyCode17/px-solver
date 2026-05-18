@@ -1,67 +1,89 @@
 //! Registry of `PersistentSession`s, keyed by target domain.
 //!
-//! Lazy spawn on first request; entries are recycled once they exceed
-//! the configured TTL. The pool does not bound concurrent acquires —
-//! one session per domain is the throttle, since callers serialize on
-//! that session's mutex.
+//! For each domain we hold up to `max_per_domain` warm browsers, picked
+//! round-robin per acquire. That lets `/v1/fetch` parallelize against
+//! the same target while each session still holds the upstream's
+//! coherent cookie jar.
 
 use crate::domain::config::CamoufoxConfig;
 use crate::infrastructure::session::PersistentSession;
 use px_errors::AppError;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use tokio::sync::Mutex;
 
+#[derive(Default)]
+struct DomainSlot {
+    sessions: Vec<Arc<PersistentSession>>,
+    /// Round-robin cursor for `pick`.
+    cursor: AtomicUsize,
+}
+
 pub(crate) struct SessionPool {
     config: CamoufoxConfig,
-    sessions: Mutex<HashMap<String, Arc<PersistentSession>>>,
+    domains: Mutex<HashMap<String, DomainSlot>>,
     ttl: Duration,
+    max_per_domain: usize,
 }
 
 impl SessionPool {
-    pub(crate) fn new(config: CamoufoxConfig, ttl: Duration) -> Self {
+    pub(crate) fn new(config: CamoufoxConfig, ttl: Duration, max_per_domain: usize) -> Self {
         Self {
             config,
-            sessions: Mutex::new(HashMap::new()),
+            domains: Mutex::new(HashMap::new()),
             ttl,
+            max_per_domain: max_per_domain.max(1),
         }
     }
 
-    /// Returns the warm session for `domain`, spawning a new one (and
-    /// evicting any aged-out predecessor) when needed. Spawning a fresh
-    /// browser holds the registry lock only briefly: the actual
-    /// geckodriver launch happens with the registry unlocked so other
-    /// domains can be acquired in parallel.
+    /// Acquire a session for `domain`. If the slot has room, lazily
+    /// spawns a new browser; otherwise rotates round-robin across the
+    /// existing sessions. Aged-out sessions are dropped on the way.
     pub(crate) async fn acquire(&self, domain: &str) -> Result<Arc<PersistentSession>, AppError> {
         {
-            let mut guard = self.sessions.lock().await;
-            if let Some(existing) = guard.get(domain)
-                && !existing.is_aged_out(self.ttl)
-            {
-                return Ok(Arc::clone(existing));
+            let mut guard = self.domains.lock().await;
+            let slot = guard
+                .entry(domain.to_string())
+                .or_insert_with(DomainSlot::default);
+            let before = slot.sessions.len();
+            slot.sessions.retain(|s| !s.is_aged_out(self.ttl));
+            if slot.sessions.len() < before {
+                tracing::info!(
+                    %domain,
+                    evicted = before - slot.sessions.len(),
+                    "evicted aged-out Camoufox sessions"
+                );
             }
-            if guard.contains_key(domain) {
-                tracing::info!(%domain, "recycling aged-out Camoufox session");
-                guard.remove(domain);
+            if slot.sessions.len() >= self.max_per_domain {
+                let idx = slot.cursor.fetch_add(1, Ordering::Relaxed) % slot.sessions.len();
+                return Ok(Arc::clone(&slot.sessions[idx]));
             }
         }
         let fresh = Arc::new(PersistentSession::spawn(&self.config, domain).await?);
-        let mut guard = self.sessions.lock().await;
-        // Double-check: another task may have raced and inserted a fresh
-        // entry while we were spawning. Prefer the existing one to avoid
-        // leaking the just-spawned browser.
-        if let Some(existing) = guard.get(domain)
-            && !existing.is_aged_out(self.ttl)
-        {
-            return Ok(Arc::clone(existing));
+        let mut guard = self.domains.lock().await;
+        let slot = guard
+            .entry(domain.to_string())
+            .or_insert_with(DomainSlot::default);
+        if slot.sessions.len() < self.max_per_domain {
+            slot.sessions.push(Arc::clone(&fresh));
+            return Ok(fresh);
         }
-        guard.insert(domain.into(), Arc::clone(&fresh));
-        Ok(fresh)
+        // Race: somebody else filled the slot while we spawned. Pick
+        // one of the existing sessions; the just-spawned browser drops
+        // here (kill_on_drop fires when `fresh`'s Arc count hits 0).
+        let idx = slot.cursor.fetch_add(1, Ordering::Relaxed) % slot.sessions.len();
+        Ok(Arc::clone(&slot.sessions[idx]))
     }
 
     #[allow(dead_code)]
-    pub(crate) async fn len(&self) -> usize {
-        self.sessions.lock().await.len()
+    pub(crate) async fn total_sessions(&self) -> usize {
+        self.domains
+            .lock()
+            .await
+            .values()
+            .map(|slot| slot.sessions.len())
+            .sum()
     }
 }
