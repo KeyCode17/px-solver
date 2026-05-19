@@ -13,6 +13,7 @@ use tokio::time::sleep;
 
 use crate::infrastructure::proxy_pool::ProxyPool;
 use crate::infrastructure::session_pool::SessionPool;
+use crate::infrastructure::synthetic_user::SyntheticUserPool;
 
 pub struct CamoufoxPool {
     pub(crate) config: CamoufoxConfig,
@@ -37,11 +38,21 @@ impl CamoufoxPool {
                 "proxy rotation enabled for /v1/fetch sessions"
             );
         }
+        let user_pool_size = std::env::var("PX_SYNTHETIC_USERS")
+            .ok()
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(20);
+        let users = Arc::new(SyntheticUserPool::new(user_pool_size));
+        tracing::info!(
+            count = users.len(),
+            "synthetic user pool seeded for /v1/fetch sessions"
+        );
         let sessions = Arc::new(SessionPool::new(
             config.clone(),
             Duration::from_secs(300),
             max_per_domain,
             proxies,
+            users,
         ));
         Ok(Self {
             config,

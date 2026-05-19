@@ -27,3 +27,4 @@ config/server.yaml
 !px-research/sensor-maps/**/*.json
 !px-research/fingerprints/**/*.json
 !px-research/deobf/**/*.js
+graphify-out/

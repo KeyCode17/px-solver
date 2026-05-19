@@ -6,3 +6,4 @@ pub mod fetch_strategies;
 pub mod proxy_pool;
 pub mod session;
 pub mod session_pool;
+pub mod synthetic_user;

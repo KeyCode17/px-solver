@@ -21,37 +21,6 @@ use tokio::time::sleep;
 
 pub(crate) type FetchTriple = (u16, HashMap<String, String>, String);
 
-pub(crate) async fn navigate_and_read(
-    client: &fantoccini::Client,
-    req: &FetchRequest,
-    navigate_timeout: Duration,
-) -> Result<FetchTriple, AppError> {
-    // Warm session has CF clearance already; the new navigation only
-    // needs DOM to settle before we read body text. 1s is enough for
-    // the niles JSON endpoint to render `document.body.innerText`.
-    navigate_with_wait(
-        client,
-        &req.url,
-        navigate_timeout,
-        Duration::from_millis(1_000),
-    )
-    .await?;
-    let body_val = client
-        .execute("return document.body.innerText;", vec![])
-        .await
-        .map_err(|e| AppError::InternalError(format!("read body: {e}")))?;
-    let body = body_val.as_str().unwrap_or("").to_string();
-    let trimmed = body.trim_start();
-    let status = if trimmed.starts_with('{') || trimmed.starts_with('[') {
-        200
-    } else if looks_like_challenge(&body) {
-        403
-    } else {
-        500
-    };
-    Ok((status, HashMap::new(), body))
-}
-
 pub(crate) async fn in_page_fetch(
     client: &fantoccini::Client,
     req: &FetchRequest,
@@ -86,14 +55,6 @@ pub(crate) async fn in_page_fetch(
     Ok((status, headers, body))
 }
 
-fn looks_like_challenge(body: &str) -> bool {
-    body.contains("__cf_chl")
-        || body.contains("Just a moment")
-        || body.contains("\"appId\":\"PXeT15wiaE\"")
-        || body.contains("tráfico inusual")
-        || body.contains("trafico inusual")
-}
-
 pub(crate) async fn navigate_with_wait(
     client: &fantoccini::Client,
     url: &str,
@@ -105,5 +66,80 @@ pub(crate) async fn navigate_with_wait(
         return Err(AppError::InternalError(format!("navigate timeout: {url}")));
     }
     sleep(settle).await;
+    Ok(())
+}
+
+/// Synthetic "human" signal pack injected before `in_page_fetch`.
+///
+/// PerimeterX scores the bare `navigate → fetch` sequence as automation
+/// (no scroll, no pointer, no idle dwell). This script:
+///
+/// * dispatches a handful of `mousemove` events along a curved path,
+/// * scrolls to a randomised midpoint and back,
+/// * seeds a couple of realistic-looking `localStorage`/`sessionStorage`
+///   keys that PX consults for cross-visit continuity signals,
+/// * sleeps a randomised 600-1400 ms so request rhythm has jitter.
+///
+/// The whole thing is best-effort — any error from `execute` is logged
+/// at debug and swallowed so the fetch still runs.
+/// Synthetic "human" signal pack injected before `in_page_fetch`.
+///
+/// Beyond the bare scroll/mouse jitter, this seeds the page with the
+/// kind of "lived-in browser" state PerimeterX scores positively: a
+/// long-running GA `_ga` cookie, a `_gid` and `_fbp`, a synthetic
+/// `peya:firstVisit` localStorage timestamp set to N days ago, and a
+/// realistic visit count. When `user` is `Some`, those values come
+/// from a `SyntheticUser`; otherwise random anonymous values are used.
+pub(crate) async fn humanize_for(
+    client: &fantoccini::Client,
+    user: Option<&crate::infrastructure::synthetic_user::SyntheticUser>,
+) -> Result<(), AppError> {
+    let ga = user.map(|u| u.ga_client_id.clone()).unwrap_or_default();
+    let gid = user.map(|u| u.gid.clone()).unwrap_or_default();
+    let fbp = user.map(|u| u.fbp.clone()).unwrap_or_default();
+    let first_visit_days = user.map(|u| u.first_visit_days_ago).unwrap_or(7);
+    let sessions = user.map(|u| u.session_count).unwrap_or(3);
+    let user_id = user.map(|u| u.id.clone()).unwrap_or_else(|| "anon".into());
+    let user_id_js = serde_json::to_string(&user_id).unwrap_or_else(|_| "\"anon\"".into());
+    let ga_js = serde_json::to_string(&ga).unwrap_or_else(|_| "\"\"".into());
+    let gid_js = serde_json::to_string(&gid).unwrap_or_else(|_| "\"\"".into());
+    let fbp_js = serde_json::to_string(&fbp).unwrap_or_else(|_| "\"\"".into());
+    let script = format!(
+        r#"
+        const cb = arguments[arguments.length - 1];
+        try {{
+          const rand = (min, max) => min + Math.random() * (max - min);
+          const w = window.innerWidth || 1280;
+          const h = window.innerHeight || 720;
+          for (let i = 0; i < 6; i++) {{
+            document.dispatchEvent(new MouseEvent('mousemove', {{
+              clientX: rand(40, w - 40),
+              clientY: rand(40, h - 40),
+              bubbles: true,
+            }}));
+          }}
+          window.scrollTo({{ top: rand(120, 480), behavior: 'instant' }});
+          setTimeout(() => window.scrollTo({{ top: rand(0, 200), behavior: 'instant' }}), 200);
+          try {{
+            const visitMs = Date.now() - {first_visit_days} * 86400000;
+            localStorage.setItem('peya:firstVisit', String(visitMs));
+            localStorage.setItem('peya:sessions', String({sessions}));
+            localStorage.setItem('peya:userTag', {user_id_js});
+            sessionStorage.setItem('peya:lastInteraction', String(Date.now()));
+            if ({ga_js}) document.cookie = '_ga=' + {ga_js} + '; path=/; max-age=63072000';
+            if ({gid_js}) document.cookie = '_gid=' + {gid_js} + '; path=/; max-age=86400';
+            if ({fbp_js}) document.cookie = '_fbp=' + {fbp_js} + '; path=/; max-age=7776000';
+          }} catch (e) {{ /* storage / cookie may be partitioned */ }}
+          setTimeout(cb, Math.floor(rand(600, 1400)));
+        }} catch (e) {{ cb(); }}
+        "#,
+    );
+    let exec = client.execute_async(&script, vec![]);
+    if tokio::time::timeout(Duration::from_secs(5), exec)
+        .await
+        .is_err()
+    {
+        tracing::debug!("humanize timeout (non-fatal)");
+    }
     Ok(())
 }
