@@ -130,6 +130,57 @@ hard to read and (b) making sure the sensor cannot run outside a real
 browser DOM. Layer (b) is what we still owe — and the work is
 **collecting realistic input signals**, not reversing crypto.
 
+## `vN` algorithm (un-flattened VM)
+
+`vN(target, lenBound, secret)` produces the offsets array consumed by
+`vQ`. The on-disk implementation is a switch/with/case state machine
+(2 arms entered as `gJ(191, 33)`); after unwinding the dispatch:
+
+```
+function vN(target, lenBound, secret) {
+  // Setup: derive aF from the per-call secret (one of t[-232] in vP).
+  const aF = jw(hP(secret), vJ);     // vJ = 10
+  // Arm 1: find aH = max product of charCodes inside aF.
+  let aH = -1;
+  for (let aI = 0; aI < target.length; aI++) {
+    const aJ = Math.floor(aI / aF.length + 1);            // note: +1 inside floor()
+    const aK = aI >= aF.length ? aI % aF.length : aI;
+    const aL = aF.charCodeAt(aK) * aF.charCodeAt(aJ);
+    if (aL > aH) aH = aL;
+  }
+  // Arm 2: build offsets, remap big ones into the safe window,
+  //        dedupe by incrementing, sort.
+  const aG = [];
+  for (let aM = 0; aM < target.length; aM++) {
+    const aN = Math.floor(aM / aF.length) + 1;            // note: +1 outside floor()
+    const aO = aM % aF.length;
+    let aP = aF.charCodeAt(aO) * aF.charCodeAt(aN);
+    if (aP >= lenBound) aP = vM(aP, 0, aH, 0, lenBound - 1);
+    while (aG.indexOf(aP) !== -1) aP += 1;
+    aG.push(aP);
+  }
+  return aG.sort((t, n) => t - n);
+}
+
+// vM(t, n, e, r, g)  ==  linear remap from [n, e] onto [r, g]
+function vM(t, n, e, r, g) {
+  return Math.floor((t - n) / (e - n) * (g - r) + r);
+}
+```
+
+`vL()` returns the secret feed:
+```
+function vL() {
+  return jw(hP(pf() || gC(365)), vJ);  // gC(365) is a fallback string
+}
+```
+i.e. `vL = jw(base64(pageFingerprint or fallback), 10)`. Same XOR family
+as the payload cipher, but with key `vJ = 10` instead of `iS = 50`.
+
+This is enough for the N1 sprint (ADR-0024) — port `vN`, `vM`, `vL`,
+`jw`, `hP` to Rust, then `vQ` reduces to a deterministic splice driven
+by the sorted offsets.
+
 ## Status update
 
 | Phase | Status                                                                          |
