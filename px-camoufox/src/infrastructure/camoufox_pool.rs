@@ -11,6 +11,7 @@ use tokio::process::Command;
 use tokio::sync::Semaphore;
 use tokio::time::sleep;
 
+use crate::infrastructure::proxy_pool::ProxyPool;
 use crate::infrastructure::session_pool::SessionPool;
 
 pub struct CamoufoxPool {
@@ -29,10 +30,18 @@ impl CamoufoxPool {
             .ok()
             .and_then(|s| s.parse::<usize>().ok())
             .unwrap_or(2);
+        let proxies = Arc::new(ProxyPool::from_env("PX_PROXIES"));
+        if !proxies.is_empty() {
+            tracing::info!(
+                count = proxies.len(),
+                "proxy rotation enabled for /v1/fetch sessions"
+            );
+        }
         let sessions = Arc::new(SessionPool::new(
             config.clone(),
             Duration::from_secs(300),
             max_per_domain,
+            proxies,
         ));
         Ok(Self {
             config,

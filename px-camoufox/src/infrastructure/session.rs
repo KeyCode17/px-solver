@@ -38,7 +38,11 @@ pub(crate) struct Inner {
 }
 
 impl PersistentSession {
-    pub(crate) async fn spawn(config: &CamoufoxConfig, domain: &str) -> Result<Self, AppError> {
+    pub(crate) async fn spawn(
+        config: &CamoufoxConfig,
+        domain: &str,
+        proxy: Option<&str>,
+    ) -> Result<Self, AppError> {
         let port = pick_free_port().await?;
         let child = Command::new(&config.geckodriver_bin)
             .arg("--port")
@@ -51,14 +55,19 @@ impl PersistentSession {
             .spawn()
             .map_err(|e| AppError::InternalError(format!("spawn geckodriver: {e}")))?;
         wait_for_geckodriver(port, Duration::from_secs(15)).await?;
-        let caps = build_capabilities(config, None);
+        let caps = build_capabilities(config, proxy);
         let endpoint = format!("http://127.0.0.1:{port}");
         let client = ClientBuilder::native()
             .capabilities(caps)
             .connect(&endpoint)
             .await
             .map_err(|e| AppError::InternalError(format!("webdriver connect: {e}")))?;
-        tracing::info!(domain = %domain, port, "persistent Camoufox session spawned");
+        tracing::info!(
+            domain = %domain,
+            port,
+            proxy = proxy.unwrap_or("direct"),
+            "persistent Camoufox session spawned"
+        );
         Ok(Self {
             created_at: Instant::now(),
             inner: Mutex::new(Inner {
