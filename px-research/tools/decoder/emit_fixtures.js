@@ -8,7 +8,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { jw, hP, vL, vM, vN, vQ, IS } = require('./cipher_ref');
+const { jw, hP, vL, vM, vN, vQ, vP, IS } = require('./cipher_ref');
 
 const OUT_DIR = path.resolve(__dirname, '../../../px-native/tests/fixtures/cipher');
 fs.mkdirSync(OUT_DIR, { recursive: true });
@@ -119,6 +119,37 @@ dump(
       expected: vQ('tag', 'helloworld', vN('tag', 'helloworld'.length, 'seed')),
     },
   ]);
+}
+
+// vP — end-to-end sensor encryptor. Outputs may contain non-ASCII so
+// expected is a byte array (asBytes).
+{
+  const cases = [
+    {
+      events: '[{"t":"PX12457","d":{"AzNweUZUfEs=":1716192345678}}]',
+      pf: 'pedidosya.com.ar',
+      cu: 'b9b7f7a0-deadbeef',
+    },
+    {
+      events: '[{"t":"PX561","d":{}}]',
+      pf: 'https://www.pedidosya.com.ar',
+      cu: 'short',
+    },
+    {
+      events: '[]',
+      pf: '',
+      cu: 'cu-empty-pf',
+    },
+  ];
+  dump(
+    'vP',
+    cases.map((c) => ({
+      events_json: c.events,
+      pf: c.pf,
+      cu: c.cu,
+      expected: asBytes(vP(c.events, c.pf, c.cu)),
+    })),
+  );
 }
 
 process.stdout.write('done.\n');

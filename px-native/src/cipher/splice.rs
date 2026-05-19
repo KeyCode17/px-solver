@@ -20,9 +20,10 @@
 
 use px_errors::AppError;
 
-/// Returns the spliced payload. Errors if any offset would index
-/// outside the payload — that indicates `vN` was called with a
-/// `len_bound` that does not match `payload.len()`.
+/// Returns the spliced payload. Matches the JS `String.prototype.substring`
+/// semantics that the reference implementation relies on: arguments
+/// less than 0 become 0, greater than `len` become `len`, and if
+/// `start > end` they are swapped before slicing.
 pub fn v_q(salt: &[u8], payload: &[u8], offsets: &[i64]) -> Result<Vec<u8>, AppError> {
     if offsets.len() < salt.len() {
         return Err(AppError::InternalError(format!(
@@ -32,25 +33,28 @@ pub fn v_q(salt: &[u8], payload: &[u8], offsets: &[i64]) -> Result<Vec<u8>, AppE
         )));
     }
     let mut bd: Vec<u8> = Vec::with_capacity(payload.len() + salt.len());
-    let mut be: usize = 0;
-    for bg in 0..salt.len() {
-        let cut = offsets[bg]
-            .checked_sub(bg as i64)
-            .and_then(|x| x.checked_sub(1))
-            .and_then(|x| usize::try_from(x).ok())
-            .filter(|&x| x <= payload.len())
-            .ok_or_else(|| AppError::InternalError(format!("vQ: bad offset at {bg}")))?;
-        if cut < be {
-            return Err(AppError::InternalError(format!(
-                "vQ: non-monotonic offset {cut} < {be} at {bg}"
-            )));
-        }
-        bd.extend_from_slice(&payload[be..cut]);
-        bd.push(salt[bg]);
+    let mut be: i64 = 0;
+    let plen = payload.len();
+    for (bg, salt_byte) in salt.iter().enumerate() {
+        let cut = offsets[bg] - (bg as i64) - 1;
+        bd.extend_from_slice(substring(payload, be, cut, plen));
+        bd.push(*salt_byte);
         be = cut;
     }
-    bd.extend_from_slice(&payload[be..]);
+    let plen_i = plen as i64;
+    bd.extend_from_slice(substring(payload, be, plen_i, plen));
     Ok(bd)
+}
+
+/// JS `String.prototype.substring(start, end)` over a byte slice.
+fn substring(buf: &[u8], start: i64, end: i64, len: usize) -> &[u8] {
+    let len_i = len as i64;
+    let mut s = start.clamp(0, len_i);
+    let mut e = end.clamp(0, len_i);
+    if s > e {
+        std::mem::swap(&mut s, &mut e);
+    }
+    &buf[s as usize..e as usize]
 }
 
 #[cfg(test)]

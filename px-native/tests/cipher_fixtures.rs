@@ -5,7 +5,7 @@
 use std::fs;
 use std::path::Path;
 
-use px_native::cipher::{h_p, jw, v_l, v_m, v_n, v_q};
+use px_native::cipher::{encrypt_sensor, h_p, jw, v_l, v_m, v_n, v_q};
 use serde::Deserialize;
 
 const ROOT: &str = "tests/fixtures/cipher";
@@ -112,5 +112,22 @@ fn v_q_matches_reference() {
         let got =
             v_q(v.salt.as_bytes(), v.payload.as_bytes(), &v.offsets).expect("vQ ok in fixture");
         assert_eq!(got.as_slice(), v.expected.as_bytes());
+    }
+}
+
+#[derive(Deserialize)]
+struct VpVec {
+    events_json: String,
+    pf: String,
+    cu: String,
+    expected: Vec<u8>,
+}
+
+#[test]
+fn encrypt_sensor_matches_reference() {
+    for v in load::<VpVec>("vP") {
+        let got = encrypt_sensor(v.events_json.as_bytes(), v.pf.as_bytes(), v.cu.as_bytes())
+            .expect("encrypt_sensor ok in fixture");
+        assert_eq!(got, v.expected, "vP mismatch for cu={:?}", v.cu);
     }
 }

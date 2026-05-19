@@ -1,0 +1,12 @@
+# pedidosya.com.ar — PerimeterX tenant `eT15wiaE`.
+# Captured 2026-05-19. See ADR-0024 and
+# px-research/notes/eT15wiaE/r3-sensor-grammar-2026-05-20.md.
+
+app_id      = "PXeT15wiaE"
+app_id_tag  = "eT15wiaE"
+sensor_path = "/xhr/b/s"
+pf_fallback = "PXeT15wiaE-default-pf"
+
+[xor_keys]
+payload     = 50
+secret_feed = 10

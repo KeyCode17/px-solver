@@ -86,4 +86,16 @@ function vQ(salt, payload, offsets) {
   return bd;
 }
 
-module.exports = { HI, VJ, IS, jw, hP, vM, vL, vN, vQ };
+// vP — top-level sensor encryptor. JS reference (line 6050) chains the
+// six primitives together. Inputs:
+//   events_json — already JSON-stringified events (output of `hY`)
+//   pf          — value of `pf()` (page fingerprint) at call time
+//   cu          — `ctx.cu` (the salt fed into vN)
+function vP(events_json, pf, cu) {
+  const secret_feed = vL(pf);
+  const encrypted = hP(jw(events_json, IS));
+  const offsets = vN(secret_feed, encrypted.length, cu);
+  return vQ(secret_feed, encrypted, offsets);
+}
+
+module.exports = { HI, VJ, IS, jw, hP, vM, vL, vN, vQ, vP };
