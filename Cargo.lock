@@ -1471,6 +1471,7 @@ dependencies = [
  "clap",
  "pxsolver-auth",
  "pxsolver-detector",
+ "pxsolver-native",
  "reqwest 0.12.28",
  "serde",
  "serde_json",

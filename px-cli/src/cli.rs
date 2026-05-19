@@ -26,6 +26,8 @@ pub enum Cmd {
     Serve,
     /// Solve a target URL by calling a running px-server's POST /v1/solve.
     Solve(SolveArgs),
+    /// Diff a Camoufox sensor capture against px-native's synthetic batch.
+    Calibrate(CalibrateArgs),
 }
 
 #[derive(Args, Debug)]
@@ -90,4 +92,13 @@ pub struct SolveArgs {
     /// Optional upstream proxy passed to the solver.
     #[arg(long)]
     pub proxy: Option<String>,
+}
+
+#[derive(Args, Debug)]
+pub struct CalibrateArgs {
+    /// Path to a capture JSON emitted by `pxsolver-camoufox::capture_sensor`.
+    pub capture: PathBuf,
+    /// Print the report as JSON (default: human-readable).
+    #[arg(long)]
+    pub json: bool,
 }

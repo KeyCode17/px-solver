@@ -14,5 +14,6 @@ async fn main() -> Result<()> {
         Cmd::Allowlist { op } => commands::allowlist::run(op).await,
         Cmd::Serve => commands::serve::run(),
         Cmd::Solve(args) => commands::solve::run(args).await,
+        Cmd::Calibrate(args) => commands::calibrate::run(args).await,
     }
 }
