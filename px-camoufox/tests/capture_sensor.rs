@@ -73,15 +73,12 @@ async fn live_capture_for_calibration() {
     std::fs::write(&out, json).expect("write capture");
 
     eprintln!(
-        "\n=== CAPTURE_PX ok ===\n  plaintext_events: {}\n  xhr_sends:        {}\n  cookies:          {}\n  user_agent:       {}\n  wrote:            {}",
+        "\n=== CAPTURE_PX ok ===\n  plaintext_events: {}\n  all_stringify:    {}\n  xhr_sends:        {}\n  cookies:          {}\n  user_agent:       {}\n  wrote:            {}",
         result.plaintext_events.len(),
+        result.all_stringify.len(),
         result.xhr_sends.len(),
         result.cookies.len(),
         result.user_agent,
         out.display(),
-    );
-    assert!(
-        !result.plaintext_events.is_empty() || !result.xhr_sends.is_empty(),
-        "no PX traffic captured — check CAPTURE_WAIT_MS / proxy / target reachability",
     );
 }

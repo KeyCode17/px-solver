@@ -30,10 +30,28 @@ pub struct CaptureXhr {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaptureResult {
-    pub plaintext_events: Vec<serde_json::Value>,
+    /// Each entry is a JSON string of the form `[{"t":"PX…","d":{…}},…]`
+    /// — either grabbed from a `JSON.stringify` call (rare) or from
+    /// the `Array.prototype.join` hook (common, since `hY` builds
+    /// JSON manually).
+    pub plaintext_events: Vec<String>,
+    /// Loose-filter dump of all JSON.stringify calls on arrays of
+    /// objects. Useful when the runtime serialises events in a
+    /// non-`{t, d}` shape and the strict filter misses them.
+    #[serde(default)]
+    pub all_stringify: Vec<String>,
     pub xhr_sends: Vec<CaptureXhr>,
     pub cookies: Vec<(String, String)>,
     pub user_agent: String,
+    /// Diagnostics: how many times Array.prototype.join fired in the
+    /// session (proves the hook is live) and the first ten short
+    /// outputs (helps tune the filter).
+    #[serde(default)]
+    pub join_calls: u64,
+    #[serde(default)]
+    pub join_samples: Vec<String>,
+    #[serde(default)]
+    pub hooked: bool,
 }
 
 pub async fn capture_sensor(
@@ -73,29 +91,55 @@ async fn run_capture(
     target_url: &str,
     wait_ms: u64,
 ) -> Result<CaptureResult, AppError> {
-    if tokio::time::timeout(Duration::from_secs(20), client.goto("about:blank"))
-        .await
-        .is_err()
-    {
-        return Err(AppError::InternalError("nav about:blank timeout".into()));
-    }
-    client
-        .execute(HOOK_SCRIPT, vec![])
-        .await
-        .map_err(|e| AppError::InternalError(format!("inject hook: {e}")))?;
-
+    // Navigate first — page context belongs to the target. Inject the
+    // hook immediately after, before any periodic sensor send fires.
     if tokio::time::timeout(Duration::from_secs(60), client.goto(target_url))
         .await
         .is_err()
     {
         return Err(AppError::InternalError(format!("nav {target_url} timeout")));
     }
-    sleep(Duration::from_millis(wait_ms)).await;
+    client
+        .execute(HOOK_SCRIPT, vec![])
+        .await
+        .map_err(|e| AppError::InternalError(format!("inject hook: {e}")))?;
+    // Nudge the runtime: spread synthetic interactions across the wait
+    // window so PX's periodic flush has events to send.
+    let nudge_steps = std::cmp::max(1, wait_ms / 4_000);
+    let step = wait_ms / nudge_steps;
+    for i in 0..nudge_steps {
+        let script = format!(
+            "try {{ window.scrollTo(0, {y}); \
+             document.dispatchEvent(new MouseEvent('mousemove', {{clientX: {x}, clientY: {y}, bubbles: true}})); \
+             document.dispatchEvent(new KeyboardEvent('keydown', {{key: 'a', bubbles: true}})); \
+            }} catch(_){{}}",
+            x = 100 + i * 37,
+            y = 50 + i * 73,
+        );
+        let _ = client.execute(&script, vec![]).await;
+        sleep(Duration::from_millis(step)).await;
+    }
+
+    // Trigger pagehide → many PX runtimes flush the pending sensor on
+    // unload via sendBeacon. We capture it before the dump.
+    let _ = client
+        .execute(
+            "try { document.dispatchEvent(new Event('visibilitychange')); \
+             window.dispatchEvent(new Event('pagehide')); \
+             window.dispatchEvent(new Event('beforeunload')); } catch(_){}",
+            vec![],
+        )
+        .await;
+    sleep(Duration::from_millis(1_500)).await;
 
     let dump = client
         .execute(
             "return JSON.stringify({\
                 captures: window.__pxCaptures || [],\
+                all_stringify: window.__pxAllStringify || [],\
+                join_calls: window.__pxJoinCalls || 0,\
+                join_samples: window.__pxJoinSamples || [],\
+                hooked: !!window.__pxHooked,\
                 xhr: window.__pxXhr || [],\
                 ua: navigator.userAgent\
             });",
@@ -106,7 +150,14 @@ async fn run_capture(
     let raw = dump.as_str().unwrap_or("");
     #[derive(Deserialize)]
     struct Raw {
-        captures: Vec<serde_json::Value>,
+        captures: Vec<String>,
+        all_stringify: Vec<String>,
+        #[allow(dead_code)]
+        join_calls: u64,
+        #[allow(dead_code)]
+        join_samples: Vec<String>,
+        #[allow(dead_code)]
+        hooked: bool,
         xhr: Vec<CaptureXhr>,
         ua: String,
     }
@@ -124,8 +175,12 @@ async fn run_capture(
 
     Ok(CaptureResult {
         plaintext_events: parsed.captures,
+        all_stringify: parsed.all_stringify,
         xhr_sends: parsed.xhr,
         cookies,
         user_agent: parsed.ua,
+        join_calls: parsed.join_calls,
+        join_samples: parsed.join_samples,
+        hooked: parsed.hooked,
     })
 }
