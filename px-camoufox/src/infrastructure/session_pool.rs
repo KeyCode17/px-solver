@@ -6,6 +6,7 @@
 //! coherent cookie jar.
 
 use crate::domain::config::CamoufoxConfig;
+use crate::infrastructure::proxy_pool::ProxyPool;
 use crate::infrastructure::session::PersistentSession;
 use px_errors::AppError;
 use std::collections::HashMap;
@@ -26,15 +27,22 @@ pub(crate) struct SessionPool {
     domains: Mutex<HashMap<String, DomainSlot>>,
     ttl: Duration,
     max_per_domain: usize,
+    proxies: Arc<ProxyPool>,
 }
 
 impl SessionPool {
-    pub(crate) fn new(config: CamoufoxConfig, ttl: Duration, max_per_domain: usize) -> Self {
+    pub(crate) fn new(
+        config: CamoufoxConfig,
+        ttl: Duration,
+        max_per_domain: usize,
+        proxies: Arc<ProxyPool>,
+    ) -> Self {
         Self {
             config,
             domains: Mutex::new(HashMap::new()),
             ttl,
             max_per_domain: max_per_domain.max(1),
+            proxies,
         }
     }
 
@@ -61,7 +69,9 @@ impl SessionPool {
                 return Ok(Arc::clone(&slot.sessions[idx]));
             }
         }
-        let fresh = Arc::new(PersistentSession::spawn(&self.config, domain).await?);
+        let proxy = self.proxies.next();
+        let fresh =
+            Arc::new(PersistentSession::spawn(&self.config, domain, proxy.as_deref()).await?);
         let mut guard = self.domains.lock().await;
         let slot = guard
             .entry(domain.to_string())

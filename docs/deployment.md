@@ -127,6 +127,19 @@ The optional `handler:` field (added in v1.1.x per [ADR-0023](adr/0023-allowlist
 
 Currently the server reads `PX_BIND`, `PX_KEYS`, `PX_ALLOWLIST` env vars. A YAML config file is reserved for future use.
 
+### Egress proxy rotation (optional)
+
+For sustained `/v1/fetch` traffic against rate-limiting WAFs (pedidosya's PerimeterX flags a single IP after ~30 fetches/min), set `PX_PROXIES` to a CSV list of proxy URLs. Each persistent Camoufox session for a CF-routed domain is assigned a proxy round-robin from the list:
+
+```bash
+PX_PROXIES="http://user:pass@proxy1.example:8080,socks5://user:pass@proxy2.example:1080" \
+./target/release/px-server
+```
+
+Empty / unset → direct connection (no rotation). Both `http://` and `socks5://` schemes are accepted by the underlying geckodriver capability. With `PX_FETCH_MAX_PER_DOMAIN=N` (default 2), the pool spawns up to N browsers per domain, each binding to the next proxy in the rotation; the operator's effective concurrency is `N × len(proxies)` parallel egress paths before round-robin reuse kicks in.
+
+Tor as a quick test: install `tor`, let it bind `socks5://127.0.0.1:9050`, set `PX_PROXIES="socks5://127.0.0.1:9050"`. Many sites block Tor exit IPs; treat it as a fingerprint smoke-test rather than a production proxy.
+
 ## Run
 
 ```bash
