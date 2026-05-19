@@ -5,6 +5,7 @@
 //! ```
 
 pub mod b64;
+pub mod decrypt;
 pub mod offsets;
 pub mod remap;
 pub mod secret;
@@ -13,6 +14,7 @@ pub mod splice;
 pub mod xor;
 
 pub use b64::h_p;
+pub use decrypt::decrypt_payload_lossy;
 pub use offsets::v_n;
 pub use remap::v_m;
 pub use secret::v_l;

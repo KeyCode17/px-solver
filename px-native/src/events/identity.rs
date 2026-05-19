@@ -17,6 +17,20 @@ pub struct SyntheticIdentity {
 }
 
 impl SyntheticIdentity {
+    /// Deterministic hash for derived fields (session id, canvas hash
+    /// placeholder, etc.). Drives identity stability across calls
+    /// without committing to a specific UUID.
+    pub fn key_hash(&self) -> u64 {
+        use std::hash::{Hash, Hasher};
+        let mut h = std::collections::hash_map::DefaultHasher::new();
+        self.user_agent.hash(&mut h);
+        self.locale.hash(&mut h);
+        self.timezone.hash(&mut h);
+        self.viewport.hash(&mut h);
+        self.ga_client_id.hash(&mut h);
+        h.finish()
+    }
+
     /// Default identity for use in unit tests. Real production
     /// identities flow in from the camoufox `SyntheticUserPool`.
     pub fn test_default() -> Self {
