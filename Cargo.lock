@@ -1632,6 +1632,8 @@ dependencies = [
  "async-trait",
  "pxsolver-core",
  "pxsolver-errors",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

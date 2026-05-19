@@ -1,3 +1,4 @@
+pub mod cipher;
 pub mod domain;
 pub mod infrastructure;
 
