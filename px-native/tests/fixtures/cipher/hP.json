@@ -1,0 +1,34 @@
+[
+  {
+    "input": "",
+    "expected": ""
+  },
+  {
+    "input": "A",
+    "expected": "QQ=="
+  },
+  {
+    "input": "Man",
+    "expected": "TWFu"
+  },
+  {
+    "input": "Ma",
+    "expected": "TWE="
+  },
+  {
+    "input": "M",
+    "expected": "TQ=="
+  },
+  {
+    "input": "hello world",
+    "expected": "aGVsbG8gd29ybGQ="
+  },
+  {
+    "input": "pedidosya.com.ar",
+    "expected": "cGVkaWRvc3lhLmNvbS5hcg=="
+  },
+  {
+    "input": "{\"vid\":\"abc-123\",\"tag\":\"v3.1\"}",
+    "expected": "eyJ2aWQiOiJhYmMtMTIzIiwidGFnIjoidjMuMSJ9"
+  }
+]

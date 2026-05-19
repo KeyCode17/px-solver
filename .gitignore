@@ -19,6 +19,7 @@ config/allowlist.yaml
 config/server.yaml
 
 .claude/
+graphify-out/
 
 !px-research/**/.gitkeep
 !px-research/README.md

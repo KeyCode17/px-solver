@@ -1,9 +1,9 @@
 # 0010. Defer native sensor generator; ship stub crate
 
 - **Date:** 2026-05-16
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0024 (2026-05-20)
 - **Deciders:** KeyCode17
-- **Related:** ADR-0003, SOW-DEL-009
+- **Related:** ADR-0003, ADR-0024, SOW-DEL-009
 
 ## Context
 
