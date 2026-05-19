@@ -47,11 +47,11 @@ The de-obfuscated `init.webcrack.js` opens with:
 
 | Phase | Status |
 |---|---|
-| R0 — Acquisition | ✅ done for pedidosya, 2026-05-19. |
-| R1 — Surface mapping | ⏳ partial (top-level skim only). Needs CDP-hooked browser run capturing every `window` / `navigator` access. |
-| R2 — Deobfuscation | ⏳ pass 1 via webcrack. Needs: (1) custom `gB(t)` decoder pass, (2) VM extraction + interpreter dump, (3) humanify identifier renaming. |
-| R3 — Sensor RE | ⏳ not started. |
-| R4 — Bypass selection | ⏳ blocked on R3. |
+| R0 — Acquisition | ✅ done 2026-05-19. |
+| R1 — Surface mapping | ✅ done 2026-05-20 — static surface from `r2-decoder-output-2026-05-20.md` is sufficient; CDP trace deferred to N3 (event-collector calibration) where it serves a clearer purpose. |
+| R2 — Deobfuscation | ✅ done 2026-05-20 — 1 457 strings inlined via custom `gB(t)` transform; pass-2 output at `deobf/eT15wiaE/2026-05-20-init.gb-decoded.v2.js`. See `r2-decoder-output-2026-05-20.md`. |
+| R3 — Sensor RE | ✅ done 2026-05-20 — cipher = XOR(0x32) + base64 + `vQ`-splice VM; no AES, no HMAC. See `r3-sensor-grammar-2026-05-20.md`. |
+| R4 — Bypass selection | ✅ done 2026-05-20 — ADR-0024 promotes ADR-0010 to native synthesis. |
 
 ## Hard-ban observation (relevant to bypass strategy)
 
