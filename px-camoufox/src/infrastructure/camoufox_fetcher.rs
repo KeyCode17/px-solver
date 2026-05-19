@@ -45,7 +45,16 @@ async fn run_through_session(
     // referer header is still sent on the in-page `fetch` so the
     // upstream sees a plausible navigation chain — we just don't
     // actually navigate the browser to that URL.
-    let landing = origin_of(&req.url).unwrap_or_else(|_| req.url.clone());
+    //
+    // When PX_DIAGNOSE_LAND_DIRECT=1 is set, override that policy and
+    // navigate directly to the target URL so the operator can inspect
+    // what PX actually renders (e.g. a press-and-hold captcha widget).
+    let diagnose = std::env::var("PX_DIAGNOSE_LAND_DIRECT").ok().as_deref() == Some("1");
+    let landing = if diagnose {
+        req.url.clone()
+    } else {
+        origin_of(&req.url).unwrap_or_else(|_| req.url.clone())
+    };
     if !inner.warmed || inner.last_visited.as_deref() != Some(landing.as_str()) {
         if let Err(e) = navigate_with_wait(
             &inner.client,
@@ -66,6 +75,27 @@ async fn run_through_session(
     // lifetime so PerimeterX sees a coherent returning visitor across
     // every fetch in the same Camoufox process.
     let _ = humanize_for(&inner.client, Some(&session.user)).await;
+
+    // Diagnose mode: skip the in-page fetch and return whatever the
+    // current page rendered. Operator dumps this body to inspect the
+    // PX captcha widget DOM, click targets, iframe sources, etc.
+    if diagnose {
+        let html = inner
+            .client
+            .execute("return document.body.outerHTML;", vec![])
+            .await
+            .map_err(|e| AppError::InternalError(format!("dump html: {e}")))?;
+        let body = html.as_str().unwrap_or("").to_string();
+        inner.last_used = Instant::now();
+        inner.fetch_count = inner.fetch_count.saturating_add(1);
+        drop(inner);
+        return Ok(FetchResponse {
+            status: 200,
+            headers: Default::default(),
+            body,
+            duration_ms: started.elapsed().as_millis() as u64,
+        });
+    }
 
     let outcome = in_page_fetch(&inner.client, &req, request_timeout).await;
     inner.last_used = Instant::now();
