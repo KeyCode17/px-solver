@@ -30,7 +30,9 @@ px-cloudflare      = { workspace = true }
 px-core            = { workspace = true }
 px-errors          = { workspace = true }
 px-harvester       = { workspace = true }
+px-native          = { workspace = true }
 px-perimeterx      = { workspace = true }
+reqwest            = { workspace = true }
 px-pipeline        = { workspace = true }
 px-types           = { workspace = true }
 serde              = { workspace = true }

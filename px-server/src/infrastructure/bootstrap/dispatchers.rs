@@ -8,7 +8,8 @@
 
 use crate::application::fetch_endpoint::{FetchDispatcher, RoutingFetchDispatcher};
 use crate::application::routing::RoutingDispatcher;
-use crate::application::solve_endpoint::{PxSolveDispatcher, SolveDispatcher};
+use crate::application::solve_endpoint::SolveDispatcher;
+use crate::infrastructure::bootstrap::native_routes::{NativeRoute, apply_native_overlay};
 use anyhow::{Context, Result};
 use px_camoufox::{CamoufoxConfig, CamoufoxPool};
 use px_cloudflare::CloudflareHandler;
@@ -24,10 +25,13 @@ pub struct Dispatchers {
 pub fn build_dispatchers(
     default_handler: Arc<dyn ChallengeHandler>,
     cf_domains: Vec<String>,
+    native_routes: Vec<NativeRoute>,
 ) -> Result<Dispatchers> {
     if cf_domains.is_empty() {
+        let mut router = RoutingDispatcher::new(default_handler);
+        router = apply_native_overlay(router, native_routes)?;
         return Ok(Dispatchers {
-            solve: Arc::new(PxSolveDispatcher::new(default_handler)),
+            solve: Arc::new(router),
             fetch: Arc::new(RoutingFetchDispatcher::new(None)),
         });
     }
@@ -39,8 +43,10 @@ pub fn build_dispatchers(
             domains = ?cf_domains,
             "Cloudflare routes configured but Camoufox unavailable; falling back to Chromium-only solve dispatcher (no /v1/fetch)"
         );
+        let mut router = RoutingDispatcher::new(default_handler);
+        router = apply_native_overlay(router, native_routes)?;
         return Ok(Dispatchers {
-            solve: Arc::new(PxSolveDispatcher::new(default_handler)),
+            solve: Arc::new(router),
             fetch: Arc::new(RoutingFetchDispatcher::new(None)),
         });
     }
@@ -58,6 +64,7 @@ pub fn build_dispatchers(
         fetch_router = fetch_router.with_route(d.clone(), "cloudflare", Arc::clone(&fetcher));
     }
     tracing::info!(domains = ?cf_domains, "Camoufox routing enabled (solve + fetch)");
+    solve_router = apply_native_overlay(solve_router, native_routes)?;
     Ok(Dispatchers {
         solve: Arc::new(solve_router),
         fetch: Arc::new(fetch_router),
