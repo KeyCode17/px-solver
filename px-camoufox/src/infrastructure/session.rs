@@ -6,6 +6,7 @@
 
 use crate::domain::config::CamoufoxConfig;
 use crate::infrastructure::caps::{build_capabilities, pick_free_port, wait_for_geckodriver};
+use crate::infrastructure::synthetic_user::SyntheticUser;
 use fantoccini::ClientBuilder;
 use px_errors::AppError;
 use std::time::{Duration, Instant};
@@ -19,6 +20,7 @@ use tokio::sync::Mutex;
 pub(crate) struct PersistentSession {
     pub(crate) created_at: Instant,
     pub(crate) inner: Mutex<Inner>,
+    pub(crate) user: SyntheticUser,
 }
 
 pub(crate) struct Inner {
@@ -42,6 +44,7 @@ impl PersistentSession {
         config: &CamoufoxConfig,
         domain: &str,
         proxy: Option<&str>,
+        user: SyntheticUser,
     ) -> Result<Self, AppError> {
         let port = pick_free_port().await?;
         let child = Command::new(&config.geckodriver_bin)
@@ -55,17 +58,29 @@ impl PersistentSession {
             .spawn()
             .map_err(|e| AppError::InternalError(format!("spawn geckodriver: {e}")))?;
         wait_for_geckodriver(port, Duration::from_secs(15)).await?;
-        let caps = build_capabilities(config, proxy);
+        // Per-user override of the config-level locale: the synthetic
+        // user's locale beats the global PX_CAMOUFOX_LOCALE so each
+        // session carries the matching Accept-Language chain.
+        let mut user_config = config.clone();
+        user_config.locale = user.locale.clone();
+        let caps = build_capabilities(&user_config, proxy);
         let endpoint = format!("http://127.0.0.1:{port}");
         let client = ClientBuilder::native()
             .capabilities(caps)
             .connect(&endpoint)
             .await
             .map_err(|e| AppError::InternalError(format!("webdriver connect: {e}")))?;
+        // Resize to the user's viewport so the screen fingerprint
+        // varies per synthetic identity.
+        let (w, h) = user.viewport;
+        let _ = client.set_window_size(w, h).await;
         tracing::info!(
             domain = %domain,
             port,
             proxy = proxy.unwrap_or("direct"),
+            user = %user.id,
+            locale = %user.locale,
+            viewport = format!("{w}x{h}"),
             "persistent Camoufox session spawned"
         );
         Ok(Self {
@@ -78,6 +93,7 @@ impl PersistentSession {
                 warmed: false,
                 last_visited: None,
             }),
+            user,
         })
     }
 

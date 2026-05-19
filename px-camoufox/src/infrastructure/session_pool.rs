@@ -8,6 +8,7 @@
 use crate::domain::config::CamoufoxConfig;
 use crate::infrastructure::proxy_pool::ProxyPool;
 use crate::infrastructure::session::PersistentSession;
+use crate::infrastructure::synthetic_user::SyntheticUserPool;
 use px_errors::AppError;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -28,6 +29,7 @@ pub(crate) struct SessionPool {
     ttl: Duration,
     max_per_domain: usize,
     proxies: Arc<ProxyPool>,
+    users: Arc<SyntheticUserPool>,
 }
 
 impl SessionPool {
@@ -36,6 +38,7 @@ impl SessionPool {
         ttl: Duration,
         max_per_domain: usize,
         proxies: Arc<ProxyPool>,
+        users: Arc<SyntheticUserPool>,
     ) -> Self {
         Self {
             config,
@@ -43,6 +46,7 @@ impl SessionPool {
             ttl,
             max_per_domain: max_per_domain.max(1),
             proxies,
+            users,
         }
     }
 
@@ -70,8 +74,9 @@ impl SessionPool {
             }
         }
         let proxy = self.proxies.next();
+        let user = self.users.next();
         let fresh =
-            Arc::new(PersistentSession::spawn(&self.config, domain, proxy.as_deref()).await?);
+            Arc::new(PersistentSession::spawn(&self.config, domain, proxy.as_deref(), user).await?);
         let mut guard = self.domains.lock().await;
         let slot = guard
             .entry(domain.to_string())

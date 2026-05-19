@@ -49,13 +49,14 @@ impl CamoufoxConfig {
         let geckodriver_bin = std::env::var_os("PX_GECKODRIVER_BIN")
             .map(PathBuf::from)
             .unwrap_or_else(|| home.join(".local/bin/geckodriver"));
+        let locale = std::env::var("PX_CAMOUFOX_LOCALE").unwrap_or_else(|_| "en-US".into());
         Self {
             camoufox_bin,
             geckodriver_bin,
             headless: true,
             max_concurrent: 2,
             navigate_timeout: Duration::from_secs(45),
-            locale: "en-US".into(),
+            locale,
             timezone: None,
         }
     }
