@@ -1633,6 +1633,7 @@ name = "pxsolver-native"
 version = "1.7.0"
 dependencies = [
  "async-trait",
+ "futures",
  "pxsolver-core",
  "pxsolver-errors",
  "pxsolver-pipeline",
