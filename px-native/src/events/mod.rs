@@ -9,9 +9,11 @@
 //! structure; per-tenant population is a profile concern (N5).
 
 pub mod batch;
+pub mod calibrate;
 pub mod identity;
 pub mod model;
 
 pub use batch::default_batch;
+pub use calibrate::{CalibrationReport, TagDiff, calibrate};
 pub use identity::SyntheticIdentity;
 pub use model::{EventField, SensorEvent};
