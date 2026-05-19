@@ -8,6 +8,7 @@ use px_perimeterx::PerimeterxHandler;
 use px_pipeline::ChallengeHandler;
 use px_server::application::routing::parse_camoufox_domains;
 use px_server::infrastructure::bootstrap::dispatchers::build_dispatchers;
+use px_server::infrastructure::bootstrap::native_routes::parse_native_routes;
 use px_server::{AppState, AppStateConfig, build_router};
 use std::collections::BTreeSet;
 use std::env;
@@ -41,7 +42,12 @@ async fn main() -> Result<()> {
         Arc::new(PerimeterxHandler::new(Arc::clone(&harvester)));
 
     let cf_domains = resolve_cf_domains(allowlist_store.as_ref()).await?;
-    let dispatchers = build_dispatchers(px_handler, cf_domains)?;
+    let native_routes = parse_native_routes(env::var("PX_NATIVE_PROFILES").ok().as_deref());
+    if !native_routes.is_empty() {
+        let domains: Vec<&str> = native_routes.iter().map(|r| r.domain.as_str()).collect();
+        tracing::info!(?domains, "PX_NATIVE_PROFILES → native overlay enabled");
+    }
+    let dispatchers = build_dispatchers(px_handler, cf_domains, native_routes)?;
 
     let state = AppState::new(AppStateConfig {
         verify_key: Arc::new(VerifyKey::new(Arc::new(key_store))),

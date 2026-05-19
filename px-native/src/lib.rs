@@ -6,3 +6,4 @@ pub mod profile;
 
 pub use domain::native_solver::{NativeSolver, SolveContext};
 pub use infrastructure::not_implemented::NotImplementedNativeSolver;
+pub use infrastructure::sensor_solver::SensorNativeSolver;

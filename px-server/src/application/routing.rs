@@ -44,6 +44,15 @@ impl RoutingDispatcher {
         self
     }
 
+    /// Exact-key route lookup. Overlays wrap the result in a
+    /// decorator and re-register it.
+    pub fn handler_for(&self, domain: &str) -> Option<&Arc<dyn ChallengeHandler>> {
+        self.routes.get(&domain.to_lowercase())
+    }
+    pub fn default_handler(&self) -> &Arc<dyn ChallengeHandler> {
+        &self.default
+    }
+
     /// Look up the handler matched by `host`. Matching is DNS-suffix:
     /// `pedidosya.com.ar` matches host `www.pedidosya.com.ar`.
     fn resolve(&self, host: &str) -> &Arc<dyn ChallengeHandler> {
