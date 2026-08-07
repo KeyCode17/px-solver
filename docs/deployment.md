@@ -149,7 +149,7 @@ curl -X POST http://127.0.0.1:8080/v1/solve \
   -d '{"url":"https://www.pedidosya.com.ar/","proxy":"socks5://127.0.0.1:9050"}'
 ```
 
-Accepted schemes: `http`, `https`, `socks5`, `socks5h`. `"proxy":null` (or omitting the field) harvests from the server's own address.
+Accepted schemes: `http`, `https`, `socks5`, `socks5h`. Chromium has no `socks5h` scheme and silently ignores a spec it cannot parse, so the Chromium path rewrites it to `socks5://` rather than going direct without saying so. `"proxy":null` (or omitting the field) harvests from the server's own address.
 
 The solve **never** falls back to the `PX_PROXIES` rotation — a bundle earned through an IP the caller cannot name would not be usable. The proxy is part of the cache key, so the same domain solved through two different proxies produces two entries and neither is served to the other.
 

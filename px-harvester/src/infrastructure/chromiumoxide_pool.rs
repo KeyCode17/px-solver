@@ -1,6 +1,6 @@
 use crate::domain::harvester::{HarvestRequest, HarvestResult, HarvestedCookie, Harvester};
 use crate::domain::stealth::{StealthBundle, default_stealth_bundle};
-use crate::infrastructure::egress::strip_credentials;
+use crate::infrastructure::egress::{chromium_proxy_spec, strip_credentials};
 use async_trait::async_trait;
 use chromiumoxide::browser::{Browser, BrowserConfig};
 use chromiumoxide::page::Page;
@@ -25,6 +25,12 @@ impl Default for PoolConfig {
             headless: true,
         }
     }
+}
+
+/// The launch flag carrying the egress, rendered by chromiumoxide as
+/// `--proxy-server=<spec>`.
+fn proxy_arg(proxy: &str) -> (&'static str, String) {
+    ("proxy-server", chromium_proxy_spec(proxy))
 }
 
 pub struct ChromiumoxidePool {
@@ -57,7 +63,8 @@ impl ChromiumoxidePool {
             cfg = cfg.with_head();
         }
         if let Some(proxy_url) = proxy {
-            cfg = cfg.arg(("proxy-server", proxy_url));
+            let (key, value) = proxy_arg(proxy_url);
+            cfg = cfg.arg((key, value.as_str()));
         }
         let cfg = cfg
             .build()
@@ -140,5 +147,26 @@ impl Harvester for ChromiumoxidePool {
             user_agent: ua,
             cookies,
         })
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
+mod tests {
+    use super::*;
+
+    /// Regression: the Chromium leg had no proxy argument at all, so a
+    /// requested egress was dropped without a trace.
+    #[test]
+    fn proxy_arg_carries_the_requested_egress() {
+        let (key, value) = proxy_arg("http://egress.example:8080");
+        assert_eq!(key, "proxy-server");
+        assert_eq!(value, "http://egress.example:8080");
+    }
+
+    #[test]
+    fn proxy_arg_normalizes_a_scheme_chromium_would_ignore() {
+        let (_, value) = proxy_arg("socks5h://egress.example:1080");
+        assert_eq!(value, "socks5://egress.example:1080");
     }
 }

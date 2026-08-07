@@ -1,10 +1,15 @@
 use crate::fingerprint::Fingerprint;
 use serde::{Deserialize, Serialize};
 
+/// Absent optionals are omitted from the wire, not sent as `null`: this
+/// type is what a client serializes, and a `"fingerprint": null` the
+/// server has no field for reads as a promise the API does not keep.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SolveRequest {
     pub url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub proxy: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fingerprint: Option<Fingerprint>,
 }
 
@@ -43,6 +48,25 @@ impl SolveRequest {
 #[allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn absent_optionals_stay_off_the_wire() {
+        let json = serde_json::to_string(&SolveRequest::new("https://example.com"))
+            .expect("serialize request");
+        assert_eq!(json, r#"{"url":"https://example.com"}"#);
+    }
+
+    #[test]
+    fn a_named_proxy_is_serialized() {
+        let json = serde_json::to_string(
+            &SolveRequest::new("https://example.com").with_proxy("socks5://127.0.0.1:9050"),
+        )
+        .expect("serialize request");
+        assert!(
+            json.contains(r#""proxy":"socks5://127.0.0.1:9050""#),
+            "{json}"
+        );
+    }
 
     #[test]
     fn builder_assembles_request() {

@@ -30,6 +30,20 @@ pub fn strip_credentials(proxy: String) -> String {
     sanitized
 }
 
+/// Normalize a proxy URL into a Chromium `--proxy-server` spec.
+///
+/// Chromium understands `http`, `https`, `socks4` and `socks5` — but not
+/// `socks5h`, which is a curl convention that geckodriver's capability
+/// layer accepts. Chromium *silently ignores* a spec it cannot parse and
+/// goes direct, which is the failure this whole path exists to remove, so
+/// the unknown scheme is rewritten rather than passed through.
+pub fn chromium_proxy_spec(proxy: &str) -> String {
+    match proxy.split_once("://") {
+        Some(("socks5h", host_port)) => format!("socks5://{host_port}"),
+        _ => proxy.to_string(),
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 mod tests {
@@ -54,5 +68,26 @@ mod tests {
             "http://plain.example:8080"
         );
         assert_eq!(strip_credentials("host:8080".into()), "host:8080");
+    }
+
+    #[test]
+    fn chromium_spec_rewrites_socks5h_which_chromium_cannot_parse() {
+        assert_eq!(
+            chromium_proxy_spec("socks5h://x.example:1080"),
+            "socks5://x.example:1080"
+        );
+    }
+
+    #[test]
+    fn chromium_spec_passes_supported_schemes_through() {
+        for proxy in [
+            "http://x.example:8080",
+            "https://x.example:8443",
+            "socks4://x.example:1080",
+            "socks5://x.example:1080",
+            "x.example:8080",
+        ] {
+            assert_eq!(chromium_proxy_spec(proxy), proxy);
+        }
     }
 }
