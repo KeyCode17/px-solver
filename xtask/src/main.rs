@@ -124,6 +124,7 @@ fn bump(
     if new == manifest {
         bail!("could not find `{from}` in Cargo.toml");
     }
+    let new = repin_workspace_deps(&new, &next);
     fs::write(manifest_path, new).context("write root Cargo.toml")?;
 
     if !skip_gate {
@@ -354,6 +355,30 @@ impl std::fmt::Display for Version {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}.{}.{}", self.x, self.y, self.z)
     }
+}
+
+/// Re-pin the internal `px-* = { path, version, package = "pxsolver-*" }`
+/// entries to the new workspace version.
+///
+/// Every crate carries `version.workspace = true`, so the published
+/// artifacts all bump together; a stale pin only survives while the new
+/// version still satisfies the old caret requirement. A major bump does
+/// not, and `cargo` then fails to resolve the workspace at all.
+fn repin_workspace_deps(manifest: &str, next: &Version) -> String {
+    manifest
+        .lines()
+        .map(|line| match line.split_once("version = \"") {
+            Some((head, rest)) if line.contains("package = \"pxsolver-") => {
+                match rest.split_once('"') {
+                    Some((_old, tail)) => format!("{head}version = \"{next}\"{tail}"),
+                    None => line.to_string(),
+                }
+            }
+            _ => line.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n"
 }
 
 fn parse_workspace_version(manifest: &str) -> Result<Version> {
