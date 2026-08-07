@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-types"
 description  = "Shared response shapes (SingleResponse, ListResponse, PaginationMeta)"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true

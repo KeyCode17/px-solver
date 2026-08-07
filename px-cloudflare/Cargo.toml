@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-cloudflare"
 description  = "Cloudflare challenge handler (ADR-0015, R5.7) — delegates to CF-bypass harvester (e.g. CamoufoxPool)"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true

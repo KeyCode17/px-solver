@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-auth"
 description  = "API-key + per-domain allowlist + audit log"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
