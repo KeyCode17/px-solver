@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-cache"
 description  = "Cookie cache port + DashMap default, optional Redis adapter"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true

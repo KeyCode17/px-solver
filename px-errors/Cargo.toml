@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-errors"
 description  = "Centralized AppError + IntoResponse for px-solver"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true

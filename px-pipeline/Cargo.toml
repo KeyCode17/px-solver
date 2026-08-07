@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-pipeline"
 description  = "ChallengeHandler trait + ordered pipeline orchestrator (ADR-0014)"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true

@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-native"
 description  = "Native PerimeterX sensor generator — N1 cipher core (ADR-0024)"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true

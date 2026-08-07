@@ -28,13 +28,34 @@ cd px-solver
 cargo build --release
 ```
 
-From crates.io:
+That builds both binaries — `px-server` and `px-cli`. They are **not** on crates.io (`publish = false`); source is the only way to get them.
 
-```bash
-cargo install pxsolver-server pxsolver-cli
+From crates.io, as libraries:
+
+```toml
+[dependencies]
+pxsolver-core     = "1.9"   # domain types: SolveRequest, PxCookieBundle, CacheKey
+pxsolver-pipeline = "1.9"   # ChallengeHandler, SolveAction, Pipeline
+pxsolver-harvester = "1.9"  # Harvester port + stealth Chromium pool
 ```
 
-The 16 `pxsolver-*` library crates are also published individually for downstream Rust users; in source the workspace exposes them under the short `px-*` aliases.
+All 16 `pxsolver-*` library crates are published individually, so you can depend on one piece
+without the workspace. Each has its own README on crates.io.
+
+> **Package name ≠ crate name.** You depend on `pxsolver-core` but you `use px_core::…`. The
+> `pxsolver-` prefix namespaces the family on crates.io; the source-level name stays short.
+
+| Crate | Purpose |
+|---|---|
+| [`pxsolver-core`](https://crates.io/crates/pxsolver-core) | Pure domain types, no I/O |
+| [`pxsolver-types`](https://crates.io/crates/pxsolver-types) · [`pxsolver-errors`](https://crates.io/crates/pxsolver-errors) · [`pxsolver-validation`](https://crates.io/crates/pxsolver-validation) | Response envelope, `AppError`, `Validated<T>` |
+| [`pxsolver-pipeline`](https://crates.io/crates/pxsolver-pipeline) | `ChallengeHandler` port + ordered pipeline |
+| [`pxsolver-detector`](https://crates.io/crates/pxsolver-detector) | PerimeterX detection from HTML/JS |
+| [`pxsolver-harvester`](https://crates.io/crates/pxsolver-harvester) · [`pxsolver-camoufox`](https://crates.io/crates/pxsolver-camoufox) | Chromium pool · Camoufox/geckodriver pool |
+| [`pxsolver-perimeterx`](https://crates.io/crates/pxsolver-perimeterx) · [`pxsolver-cloudflare`](https://crates.io/crates/pxsolver-cloudflare) | Shipping handlers |
+| [`pxsolver-turnstile`](https://crates.io/crates/pxsolver-turnstile) · [`pxsolver-captcha`](https://crates.io/crates/pxsolver-captcha) · [`pxsolver-datadome`](https://crates.io/crates/pxsolver-datadome) | Detection-only stubs |
+| [`pxsolver-native`](https://crates.io/crates/pxsolver-native) | Native `_px3` sensor synthesis |
+| [`pxsolver-auth`](https://crates.io/crates/pxsolver-auth) · [`pxsolver-cache`](https://crates.io/crates/pxsolver-cache) | API keys + allowlist + audit · cookie cache |
 
 ## Quickstart
 

@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-harvester"
 description  = "Vendor-agnostic Chromium pool + stealth core (chromiumoxide)"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true

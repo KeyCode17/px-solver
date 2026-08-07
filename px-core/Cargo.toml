@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-core"
 description  = "Pure domain types shared across px-solver crates"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true

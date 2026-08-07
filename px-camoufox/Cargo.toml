@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-camoufox"
 description  = "Camoufox (patched-Firefox) harvester via geckodriver + fantoccini (ADR-0020)"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true

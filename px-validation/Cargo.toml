@@ -1,6 +1,7 @@
 [package]
 name         = "pxsolver-validation"
 description  = "Validated<T> Axum extractor + Validate trait"
+readme       = "README.md"
 version.workspace      = true
 edition.workspace      = true
 rust-version.workspace = true
