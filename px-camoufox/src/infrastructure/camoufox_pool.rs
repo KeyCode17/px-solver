@@ -25,7 +25,7 @@ impl CamoufoxPool {
     pub fn new(config: CamoufoxConfig) -> Result<Self, AppError> {
         config
             .validate()
-            .map_err(|e| AppError::InternalError(format!("camoufox config: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Camoufox config: {e}")))?;
         let permits = Arc::new(Semaphore::new(config.max_concurrent));
         let max_per_domain = std::env::var("PX_FETCH_MAX_PER_DOMAIN")
             .ok()
@@ -78,7 +78,7 @@ impl CamoufoxPool {
             .permits
             .acquire()
             .await
-            .map_err(|e| AppError::InternalError(format!("semaphore: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Semaphore: {e}")))?;
         let port = pick_free_port().await?;
         let mut child = Command::new(&self.config.geckodriver_bin)
             .arg("--port")
@@ -89,7 +89,7 @@ impl CamoufoxPool {
             .stderr(std::process::Stdio::null())
             .kill_on_drop(true)
             .spawn()
-            .map_err(|e| AppError::InternalError(format!("spawn geckodriver: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Spawn geckodriver: {e}")))?;
         wait_for_geckodriver(port, Duration::from_secs(15)).await?;
         let caps = build_capabilities(&self.config, proxy);
         let endpoint = format!("http://127.0.0.1:{port}");
@@ -126,26 +126,26 @@ async fn harvest_session(
         .capabilities(caps)
         .connect(endpoint)
         .await
-        .map_err(|e| AppError::InternalError(format!("webdriver connect: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Webdriver connect: {e}")))?;
     let nav = client.goto(&req.url);
     if tokio::time::timeout(navigate_timeout, nav).await.is_err() {
         let _ = client.close().await;
-        return Err(AppError::InternalError("navigate timeout".into()));
+        return Err(AppError::InternalError("Navigate timeout".into()));
     }
     sleep(Duration::from_millis(req.wait_ms)).await;
     let html = client
         .source()
         .await
-        .map_err(|e| AppError::InternalError(format!("source: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Source: {e}")))?;
     let ua_val = client
         .execute("return navigator.userAgent;", vec![])
         .await
-        .map_err(|e| AppError::InternalError(format!("ua eval: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("User agent eval: {e}")))?;
     let user_agent = ua_val.as_str().unwrap_or("").to_string();
     let raw_cookies = client
         .get_all_cookies()
         .await
-        .map_err(|e| AppError::InternalError(format!("cookies: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Cookies: {e}")))?;
     let cookies = raw_cookies
         .into_iter()
         .map(|c| HarvestedCookie {

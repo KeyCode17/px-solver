@@ -35,17 +35,17 @@ impl ProxyClients {
         let mut cache = self
             .proxied
             .lock()
-            .map_err(|e| AppError::InternalError(format!("proxy client cache poisoned: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Proxy client cache poisoned: {e}")))?;
         if let Some(client) = cache.get(proxy) {
             return Ok(client.clone());
         }
         let built = Client::builder()
             .proxy(
                 Proxy::all(proxy)
-                    .map_err(|e| AppError::BadRequest(format!("invalid proxy url: {e}")))?,
+                    .map_err(|e| AppError::BadRequest(format!("Invalid proxy url: {e}")))?,
             )
             .build()
-            .map_err(|e| AppError::InternalError(format!("build proxied client: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Failed to build proxied client: {e}")))?;
         cache.insert(proxy.to_string(), built.clone());
         Ok(built)
     }
