@@ -57,8 +57,14 @@ path is exempt: `reqwest` implements proxy auth.
 
 - **Breaking:** `ChallengeHandler::solve` and `SolveDispatcher::solve` change signature; every
   handler crate (`px-perimeterx`, `px-cloudflare`, `px-native`, and the `px-turnstile` /
-  `px-captcha` / `px-datadome` stubs) is updated in the same change. Per ADR-0017 this is a
-  post-1.0.0 architectural change → manual `major` bump.
+  `px-captcha` / `px-datadome` stubs) is updated in the same change.
+- **Shipped as `1.9.0`, not `2.0.0`** — maintainer's call, amending the ADR-0017 line that a
+  post-1.0.0 architectural change takes a manual `major`. The trade is accepted knowingly:
+  downstream users pinning `pxsolver-* = "1"` get a compile error on `cargo update` rather than an
+  opt-in major. Anyone implementing `ChallengeHandler` outside this workspace has to add the
+  `SolveAction` parameter; nothing else in the published surface moves.
+- Internal `[workspace.dependencies]` pins had been stale at `1.4.0` since that release and now
+  track the workspace version; `xtask bump` re-pins them from here on.
 - `docs/deployment.md` gains an "Egress proxies" section correcting the old
   `N × len(proxies)` rotation claim: a session takes its proxy at spawn and keeps it until the 300s
   TTL, so distinct egress IPs per domain is `min(PX_FETCH_MAX_PER_DOMAIN, len(PX_PROXIES))`.

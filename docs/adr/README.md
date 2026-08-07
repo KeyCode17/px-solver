@@ -38,7 +38,7 @@ Format: [MADR](https://adr.github.io/madr/) lite. One file per decision, never e
 | [0022](0022-readmit-pedidosya-to-canary-with-deep-stealth-budget.md) | Re-admit pedidosya to canary with relaxed AC-2 budget (15s median / 20s p95) for CF-fronted targets; amends ADR-0018 | Accepted | 2026-05-17 |
 | [0023](0023-allowlist-handler-field-supersedes-env-csv.md) | `handler:` field in allowlist.yaml supersedes `PX_CAMOUFOX_DOMAINS` env CSV; env retained as deprecated fallback through v1.x | Accepted | 2026-05-17 |
 | [0024](0024-activate-native-px3-sensor-synthesis.md) | Activate native px-3 sensor synthesis; promote ADR-0010 | Proposed | 2026-05-20 |
-| [0025](0025-egress-proxy-propagation-contract.md) | Egress proxy propagation: per-request for `/v1/solve`, session rotation for `/v1/fetch`; egress in the cache key; credentials stripped for browser paths | Accepted | 2026-08-07 |
+| [0025](0025-egress-proxy-propagation-contract.md) | Egress proxy propagation: per-request for `/v1/solve`, session rotation for `/v1/fetch`; egress in the cache key; credentials stripped for browser paths; shipped as 1.9.0 | Accepted | 2026-08-07 |
 
 ## Template
 

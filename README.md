@@ -2,7 +2,9 @@
 
 A Rust-built solver service for PerimeterX (HUMAN Security) protection. Given a target URL on a per-domain allowlist, returns a valid `_px3` cookie bundle that a downstream authorized client can use to issue requests as if from a real browser.
 
-> **Status:** published to crates.io as the `pxsolver-*` family of crates. MVP gate hit at v1.0.0; v1.1.0 added a Camoufox-backed Cloudflare bypass path; v1.2.0 renamed the published library crates; v1.8.0 activated native `_px3` sensor synthesis ([ADR-0024](docs/adr/0024-activate-native-px3-sensor-synthesis.md)); v2.0.0 makes the per-request egress proxy real end to end ([ADR-0025](docs/adr/0025-egress-proxy-propagation-contract.md)) — a breaking `ChallengeHandler` / `SolveDispatcher` signature change. See [GitHub Releases](https://github.com/KeyCode17/px-solver/releases) for the per-version notes.
+> **Status:** v1.9.0, published to crates.io as the `pxsolver-*` family of crates. MVP gate hit at v1.0.0; v1.1.0 added a Camoufox-backed Cloudflare bypass path; v1.2.0 renamed the published library crates; v1.8.0 activated native `_px3` sensor synthesis ([ADR-0024](docs/adr/0024-activate-native-px3-sensor-synthesis.md)); v1.9.0 makes the per-request egress proxy real end to end ([ADR-0025](docs/adr/0025-egress-proxy-propagation-contract.md)). See [GitHub Releases](https://github.com/KeyCode17/px-solver/releases) for the per-version notes.
+>
+> ⚠️ **v1.9.0 is source-breaking despite the minor bump.** `ChallengeHandler::solve` and `SolveDispatcher::solve` take a `SolveAction` / `SolveRequest` instead of `&PageHtml` / `&str`. If you implement `ChallengeHandler` outside this workspace, add the parameter when upgrading; the rest of the published surface is unchanged.
 
 ## What this is
 
@@ -65,8 +67,6 @@ The 16 `pxsolver-*` library crates are also published individually for downstrea
      -d '{"url":"https://www.pedidosya.com.ar/","proxy":null}'
    ```
 
-   `"proxy"` is the egress the solve harvests through — `scheme://host:port` for `http`, `https`, `socks5` or `socks5h`, or `null` for the server's own IP. The returned `_px3` bundle is bound to that IP, so send downstream requests through the same proxy. `PX_PROXIES` is a separate, `/v1/fetch`-only rotation, and browser proxies cannot carry credentials — see [Egress proxies](docs/deployment.md#egress-proxies).
-
    Response shape:
 
    ```json
@@ -84,6 +84,35 @@ The 16 `pxsolver-*` library crates are also published individually for downstrea
    ```
 
 For systemd, reverse proxy, and key rotation workflows see [`docs/deployment.md`](docs/deployment.md).
+
+## Proxies
+
+Two mechanisms, one per endpoint. They are **not** interchangeable, and neither one falls back to the other.
+
+| | `/v1/solve` | `/v1/fetch` |
+|---|---|---|
+| Assigned by | `"proxy"` in the request body, or `px-cli solve --proxy` | `PX_PROXIES` env var (CSV), operator-side |
+| Chosen per | request | Camoufox session, at spawn |
+| Rotation | none — the solve uses exactly the proxy you named | round-robin across the list |
+| Omitted | server's own IP | server's own IP |
+
+```bash
+# /v1/solve — name the egress you will send downstream traffic through
+-d '{"url":"https://www.pedidosya.com.ar/","proxy":"socks5://127.0.0.1:9050"}'
+
+# /v1/fetch — operator-side rotation across warm sessions
+PX_PROXIES="http://p1.example:8080,socks5://p2.example:1080" ./target/release/px-server
+```
+
+A `_px3` bundle is bound to the IP that earned it, so **use the same proxy downstream that you named on the solve**. The proxy is part of the cache key: the same domain solved through two proxies yields two entries and neither is served to the other.
+
+Three things that surprise people:
+
+- **`PX_PROXIES` does nothing for `/v1/solve`.** Rotation there would hand you a bundle bound to an IP you cannot know.
+- **Browser proxies cannot authenticate.** geckodriver's W3C `proxy` capability has no credential field and Chromium ignores userinfo without a CDP `Fetch.authRequired` handler, so `user:pass@` is stripped with a warning. Front an authenticated upstream with a local relay (gost, 3proxy). The native sensor path goes over `reqwest` and *does* accept credentials.
+- **Distinct egress IPs per domain on `/v1/fetch` is `min(PX_FETCH_MAX_PER_DOMAIN, len(PX_PROXIES))`**, not the product — a session takes its proxy at spawn and keeps it for the 300s TTL.
+
+Full reference: [Egress proxies](docs/deployment.md#egress-proxies) · rationale: [ADR-0025](docs/adr/0025-egress-proxy-propagation-contract.md).
 
 ## Documentation
 

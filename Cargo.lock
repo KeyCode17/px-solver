@@ -1464,7 +1464,7 @@ dependencies = [
 
 [[package]]
 name = "px-cli"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -1483,7 +1483,7 @@ dependencies = [
 
 [[package]]
 name = "px-server"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -1516,7 +1516,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-auth"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "argon2",
  "async-trait",
@@ -1533,7 +1533,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-cache"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "async-trait",
  "dashmap",
@@ -1545,7 +1545,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-camoufox"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "async-trait",
  "fantoccini",
@@ -1563,7 +1563,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-captcha"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "async-trait",
  "pxsolver-errors",
@@ -1572,7 +1572,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-cloudflare"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "async-trait",
  "pxsolver-core",
@@ -1584,7 +1584,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-core"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1593,7 +1593,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-datadome"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "async-trait",
  "pxsolver-errors",
@@ -1602,7 +1602,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-detector"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "pxsolver-core",
  "regex",
@@ -1610,7 +1610,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-errors"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "axum",
  "serde",
@@ -1619,7 +1619,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-harvester"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "async-trait",
  "chromiumoxide",
@@ -1632,7 +1632,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-native"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "async-trait",
  "futures",
@@ -1651,7 +1651,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-perimeterx"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "async-trait",
  "pxsolver-core",
@@ -1665,7 +1665,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-pipeline"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "async-trait",
  "pxsolver-core",
@@ -1677,7 +1677,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-turnstile"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "async-trait",
  "pxsolver-errors",
@@ -1686,7 +1686,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-types"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1694,7 +1694,7 @@ dependencies = [
 
 [[package]]
 name = "pxsolver-validation"
-version = "2.0.0"
+version = "1.9.0"
 dependencies = [
  "axum",
  "pxsolver-errors",
