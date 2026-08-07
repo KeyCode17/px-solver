@@ -3,7 +3,7 @@ use crate::infrastructure::caps::{build_capabilities, pick_free_port, wait_for_g
 use async_trait::async_trait;
 use fantoccini::ClientBuilder;
 use px_errors::AppError;
-use px_harvester::{HarvestRequest, HarvestResult, HarvestedCookie, Harvester};
+use px_harvester::{HarvestRequest, HarvestResult, HarvestedCookie, Harvester, strip_credentials};
 use serde_json::{Map, Value};
 use std::sync::Arc;
 use std::time::Duration;
@@ -35,6 +35,8 @@ impl CamoufoxPool {
         if !proxies.is_empty() {
             tracing::info!(
                 count = proxies.len(),
+                max_per_domain,
+                distinct_egress_per_domain = max_per_domain.min(proxies.len()),
                 "proxy rotation enabled for /v1/fetch sessions"
             );
         }
@@ -101,7 +103,12 @@ impl CamoufoxPool {
 impl Harvester for CamoufoxPool {
     async fn harvest(&self, req: HarvestRequest) -> Result<HarvestResult, AppError> {
         let navigate_timeout = self.config.navigate_timeout;
-        let proxy = req.proxy.clone();
+        let proxy = req.proxy.clone().map(strip_credentials);
+        tracing::info!(
+            url = %req.url,
+            proxy = proxy.as_deref().unwrap_or("direct"),
+            "camoufox harvest starting"
+        );
         self.with_session(proxy.as_deref(), async move |endpoint, caps| {
             harvest_session(&endpoint, caps, &req, navigate_timeout).await
         })

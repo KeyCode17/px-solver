@@ -2,6 +2,7 @@ pub mod cookies;
 pub mod handler;
 pub mod native_first;
 pub mod not_implemented;
+pub mod proxy_clients;
 pub mod sensor_solver;
 
 pub use handler::NativePxHandler;

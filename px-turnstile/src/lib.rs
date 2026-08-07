@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use px_errors::AppError;
-use px_pipeline::{ChallengeHandler, HandlerOutcome, PageHtml};
+use px_pipeline::{ChallengeHandler, HandlerOutcome, PageHtml, SolveAction};
 
 pub struct TurnstileHandler;
 
@@ -27,7 +27,7 @@ impl ChallengeHandler for TurnstileHandler {
         Ok(h.contains("challenges.cloudflare.com/turnstile") || h.contains("cf-turnstile"))
     }
 
-    async fn solve(&self, _page: &PageHtml) -> Result<HandlerOutcome, AppError> {
+    async fn solve(&self, _action: &SolveAction) -> Result<HandlerOutcome, AppError> {
         Ok(HandlerOutcome::not_implemented(self.name()))
     }
 }

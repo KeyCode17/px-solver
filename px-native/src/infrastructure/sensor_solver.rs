@@ -18,11 +18,12 @@ use crate::cipher::encrypt_sensor;
 use crate::domain::native_solver::{NativeSolver, SolveContext};
 use crate::events::{SyntheticIdentity, default_batch};
 use crate::infrastructure::cookies::parse_set_cookies;
+use crate::infrastructure::proxy_clients::ProxyClients;
 use crate::profile::TenantProfile;
 
 /// HTTP-backed native solver bound to a single tenant profile.
 pub struct SensorNativeSolver {
-    client: Client,
+    clients: ProxyClients,
     profile: Arc<TenantProfile>,
     cookie_ttl: Duration,
 }
@@ -30,7 +31,7 @@ pub struct SensorNativeSolver {
 impl SensorNativeSolver {
     pub fn new(client: Client, profile: Arc<TenantProfile>) -> Self {
         Self {
-            client,
+            clients: ProxyClients::new(client),
             profile,
             cookie_ttl: Duration::from_secs(300),
         }
@@ -71,9 +72,9 @@ impl NativeSolver for SensorNativeSolver {
         );
         let sensor_url = self.profile.sensor_url(&origin);
         let payload = self.build_payload(ctx)?;
+        let client = self.clients.for_proxy(ctx.proxy.as_deref())?;
 
-        let resp = self
-            .client
+        let resp = client
             .post(&sensor_url)
             .header(USER_AGENT, header(&ctx.fingerprint.user_agent)?)
             .header(ACCEPT, HeaderValue::from_static("*/*"))
@@ -108,7 +109,13 @@ impl NativeSolver for SensorNativeSolver {
                 "sensor POST returned no Set-Cookie headers".into(),
             ));
         }
-        tracing::info!(target: "px_native", url = %sensor_url, count = cookies.len(), "native sensor solved");
+        tracing::info!(
+            target: "px_native",
+            url = %sensor_url,
+            count = cookies.len(),
+            proxy = ctx.proxy.as_deref().unwrap_or("direct"),
+            "native sensor solved"
+        );
         Ok(PxCookieBundle::new(
             cookies,
             ctx.fingerprint.user_agent.clone(),

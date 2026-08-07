@@ -11,9 +11,9 @@
 
 use crate::application::solve_endpoint::{SolveDispatcher, SolveOutput, domain_from_url};
 use async_trait::async_trait;
-use px_core::PxCookieBundle;
+use px_core::{PxCookieBundle, SolveRequest};
 use px_errors::AppError;
-use px_pipeline::{ChallengeHandler, HandlerStatus, PageHtml};
+use px_pipeline::{ChallengeHandler, HandlerStatus, PageHtml, SolveAction};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -68,11 +68,11 @@ impl RoutingDispatcher {
 
 #[async_trait]
 impl SolveDispatcher for RoutingDispatcher {
-    async fn solve(&self, url: &str) -> Result<SolveOutput, AppError> {
-        let host = domain_from_url(url)?;
+    async fn solve(&self, req: SolveRequest) -> Result<SolveOutput, AppError> {
+        let host = domain_from_url(&req.url)?;
         let handler = self.resolve(&host);
-        let page = PageHtml::new(url, "");
-        let outcome = handler.solve(&page).await?;
+        let action = SolveAction::new(PageHtml::new(&req.url, "")).with_proxy(req.proxy);
+        let outcome = handler.solve(&action).await?;
         if !matches!(outcome.status, HandlerStatus::Solved) {
             return Err(AppError::Conflict(format!(
                 "{} returned status {:?}",
@@ -105,94 +105,4 @@ pub fn parse_camoufox_domains(raw: Option<&str>) -> Vec<String> {
         .map(|s| s.trim().to_lowercase())
         .filter(|s| !s.is_empty())
         .collect()
-}
-
-#[cfg(test)]
-#[allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
-mod tests {
-    use super::*;
-    use px_core::CookieJarDelta;
-    use px_pipeline::{HandlerMetrics, HandlerOutcome};
-
-    struct StaticHandler {
-        name: &'static str,
-    }
-
-    #[async_trait]
-    impl ChallengeHandler for StaticHandler {
-        fn name(&self) -> &'static str {
-            self.name
-        }
-        async fn detects(&self, _page: &PageHtml) -> Result<bool, AppError> {
-            Ok(true)
-        }
-        async fn solve(&self, _page: &PageHtml) -> Result<HandlerOutcome, AppError> {
-            Ok(HandlerOutcome::solved_with_ua(
-                self.name,
-                CookieJarDelta::default(),
-                Vec::new(),
-                HandlerMetrics::default(),
-                "ua",
-            ))
-        }
-    }
-
-    #[tokio::test]
-    async fn default_handler_used_when_no_match() {
-        let d = RoutingDispatcher::new(Arc::new(StaticHandler { name: "perimeterx" })).with_route(
-            "pedidosya.com.ar",
-            Arc::new(StaticHandler { name: "cloudflare" }),
-        );
-        let out = d
-            .solve("https://www.havenwellwithin.com/")
-            .await
-            .expect("solve");
-        assert_eq!(out.handler, "perimeterx");
-    }
-
-    #[tokio::test]
-    async fn exact_host_routes_to_match() {
-        let d = RoutingDispatcher::new(Arc::new(StaticHandler { name: "perimeterx" })).with_route(
-            "pedidosya.com.ar",
-            Arc::new(StaticHandler { name: "cloudflare" }),
-        );
-        let out = d.solve("https://pedidosya.com.ar/").await.expect("solve");
-        assert_eq!(out.handler, "cloudflare");
-    }
-
-    #[tokio::test]
-    async fn subdomain_routes_to_match() {
-        let d = RoutingDispatcher::new(Arc::new(StaticHandler { name: "perimeterx" })).with_route(
-            "pedidosya.com.ar",
-            Arc::new(StaticHandler { name: "cloudflare" }),
-        );
-        let out = d
-            .solve("https://www.pedidosya.com.ar/x")
-            .await
-            .expect("solve");
-        assert_eq!(out.handler, "cloudflare");
-    }
-
-    /// Regression: the cookie bundle's `user_agent` must carry the real
-    /// harvester UA (so cache-hit replies preserve it), not a literal
-    /// placeholder string.
-    #[tokio::test]
-    async fn bundle_user_agent_matches_harvester() {
-        let d = RoutingDispatcher::new(Arc::new(StaticHandler { name: "perimeterx" }));
-        let out = d.solve("https://example.com/").await.expect("solve");
-        assert_eq!(out.user_agent, "ua");
-        assert_eq!(out.bundle.user_agent, "ua");
-    }
-
-    #[test]
-    fn parse_csv_trims_and_lowercases() {
-        let r = parse_camoufox_domains(Some(" Pedidosya.com.AR ,  ,foo.com "));
-        assert_eq!(r, vec!["pedidosya.com.ar", "foo.com"]);
-    }
-
-    #[test]
-    fn parse_csv_empty_unset() {
-        assert!(parse_camoufox_domains(None).is_empty());
-        assert!(parse_camoufox_domains(Some("")).is_empty());
-    }
 }

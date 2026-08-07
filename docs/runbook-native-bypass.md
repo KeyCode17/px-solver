@@ -7,7 +7,12 @@ This is the end-to-end procedure for taking the native PX path from
 tenant". It assumes:
 
 - A working AR (or other tenant-appropriate) residential proxy is
-  available — set `PX_PROXIES=socks5://…` in your shell.
+  available — set `PX_PROXIES=socks5://…` in your shell. Steps 1 and 4
+  read it directly (first CSV entry). The **server** does not apply it to
+  `/v1/solve`: there the egress is per request, named in the request body
+  (see [Egress proxies](deployment.md#egress-proxies)). Unlike the browser
+  paths, the native sensor POST goes through `reqwest` and does accept
+  `user:pass@` credentials.
 - Camoufox + geckodriver are installed and `CamoufoxConfig::from_env()`
   resolves them.
 - You have the `eT15wiaE` (pedidosya) profile at
@@ -68,6 +73,16 @@ The dispatcher will try the native handler first for any solve
 targeting `pedidosya.com.ar` and fall back to the existing Camoufox
 path on error or non-solved status.
 
+Name the egress per request — both the native sensor POST and the
+Camoufox fallback use it, and the returned bundle is bound to that IP:
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/solve \
+  -H "Authorization: Bearer ops1:<secret>" \
+  -H "content-type: application/json" \
+  -d "{\"url\":\"https://www.pedidosya.com.ar/\",\"proxy\":\"$PX_PROXIES\"}"
+```
+
 ## Step 4 — Throughput soak
 
 ```bash
@@ -80,8 +95,10 @@ NATIVE_SOAK=1 \
   cargo test -q -p pxsolver-native --test throughput_soak -- --ignored --nocapture
 ```
 
-The soak runs `SensorNativeSolver::solve` 80× through your live proxy
-and asserts ≥40 req/min sustained throughput. Output:
+The soak runs `SensorNativeSolver::solve` 80× and asserts ≥40 req/min
+sustained throughput. It leaves through `NATIVE_SOAK_PROXY`, or the first
+`PX_PROXIES` entry, or the host's own IP if neither is set — the run
+prints which. Output:
 
 ```
 === NATIVE_SOAK ===

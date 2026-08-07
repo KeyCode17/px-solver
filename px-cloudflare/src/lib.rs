@@ -11,7 +11,7 @@ use async_trait::async_trait;
 use px_core::{CookieJarDelta, NamedCookie};
 use px_errors::AppError;
 use px_harvester::{HarvestRequest, Harvester};
-use px_pipeline::{ChallengeHandler, HandlerMetrics, HandlerOutcome, PageHtml};
+use px_pipeline::{ChallengeHandler, HandlerMetrics, HandlerOutcome, PageHtml, SolveAction};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -53,12 +53,13 @@ impl ChallengeHandler for CloudflareHandler {
             || h.contains("cf_clearance"))
     }
 
-    async fn solve(&self, page: &PageHtml) -> Result<HandlerOutcome, AppError> {
+    async fn solve(&self, action: &SolveAction) -> Result<HandlerOutcome, AppError> {
         let Some(harvester) = self.harvester.as_ref() else {
             return Ok(HandlerOutcome::not_implemented(self.name()));
         };
         let start = Instant::now();
-        let result = harvester.harvest(HarvestRequest::new(&page.url)).await?;
+        let request = HarvestRequest::new(action.url()).with_proxy(action.proxy.clone());
+        let result = harvester.harvest(request).await?;
         let session_cookies: Vec<NamedCookie> = extract_session_cookies(&result.cookies)
             .into_iter()
             .map(|c| NamedCookie {
@@ -92,16 +93,30 @@ impl ChallengeHandler for CloudflareHandler {
 mod tests {
     use super::*;
     use px_harvester::{HarvestResult, HarvestedCookie};
+    use tokio::sync::Mutex;
 
     struct FakeHarvester {
         ua: String,
         cookies: Vec<HarvestedCookie>,
         html: String,
+        seen_proxy: Mutex<Option<String>>,
+    }
+
+    impl FakeHarvester {
+        fn new(ua: &str, cookies: Vec<HarvestedCookie>, html: &str) -> Self {
+            Self {
+                ua: ua.into(),
+                cookies,
+                html: html.into(),
+                seen_proxy: Mutex::new(None),
+            }
+        }
     }
 
     #[async_trait]
     impl Harvester for FakeHarvester {
-        async fn harvest(&self, _req: HarvestRequest) -> Result<HarvestResult, AppError> {
+        async fn harvest(&self, req: HarvestRequest) -> Result<HarvestResult, AppError> {
+            *self.seen_proxy.lock().await = req.proxy.clone();
             Ok(HarvestResult {
                 html: self.html.clone(),
                 user_agent: self.ua.clone(),
@@ -122,27 +137,46 @@ mod tests {
     #[tokio::test]
     async fn solve_without_harvester_is_not_implemented() {
         let h = CloudflareHandler::new();
-        let page = PageHtml::new("https://x.com", "");
-        let oc = h.solve(&page).await.expect("solve");
+        let action = SolveAction::new(PageHtml::new("https://x.com", ""));
+        let oc = h.solve(&action).await.expect("solve");
         assert_eq!(oc.status, px_pipeline::HandlerStatus::NotImplemented);
+    }
+
+    /// Regression: the request's proxy has to reach the harvester. It used
+    /// to be parsed at the edge and dropped before any browser saw it.
+    #[tokio::test]
+    async fn solve_forwards_the_requested_proxy_to_the_harvester() {
+        let fake = Arc::new(FakeHarvester::new(
+            "ua",
+            vec![cookie("cf_clearance")],
+            "page",
+        ));
+        let h = CloudflareHandler::with_harvester(Arc::clone(&fake) as Arc<dyn Harvester>);
+        let action = SolveAction::new(PageHtml::new("https://x.com", "<challenge>"))
+            .with_proxy(Some("socks5://127.0.0.1:9050".into()));
+        let _ = h.solve(&action).await.expect("solve");
+        assert_eq!(
+            fake.seen_proxy.lock().await.as_deref(),
+            Some("socks5://127.0.0.1:9050")
+        );
     }
 
     #[tokio::test]
     async fn solve_with_harvester_returns_session_cookies_and_ua() {
-        let fake = Arc::new(FakeHarvester {
-            ua: "Mozilla/5.0 Camoufox".into(),
-            cookies: vec![
+        let fake = Arc::new(FakeHarvester::new(
+            "Mozilla/5.0 Camoufox",
+            vec![
                 cookie("cf_clearance"),
                 cookie("__cf_bm"),
                 cookie("_px3"),
                 cookie("_pxhd"),
                 cookie("unrelated_session"),
             ],
-            html: "real page".into(),
-        });
+            "real page",
+        ));
         let h = CloudflareHandler::with_harvester(fake);
-        let page = PageHtml::new("https://x.com", "<challenge>");
-        let oc = h.solve(&page).await.expect("solve");
+        let action = SolveAction::new(PageHtml::new("https://x.com", "<challenge>"));
+        let oc = h.solve(&action).await.expect("solve");
         assert_eq!(oc.status, px_pipeline::HandlerStatus::Solved);
         assert_eq!(oc.user_agent.as_deref(), Some("Mozilla/5.0 Camoufox"));
         let names: Vec<&str> = oc.cookies.set.iter().map(|c| c.name.as_str()).collect();

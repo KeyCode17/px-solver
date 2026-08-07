@@ -5,7 +5,9 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use px_errors::AppError;
-use px_pipeline::{ChallengeHandler, HandlerName, HandlerOutcome, HandlerStatus, PageHtml};
+use px_pipeline::{
+    ChallengeHandler, HandlerName, HandlerOutcome, HandlerStatus, PageHtml, SolveAction,
+};
 
 pub struct NativeFirstHandler {
     native: Arc<dyn ChallengeHandler>,
@@ -33,8 +35,8 @@ impl ChallengeHandler for NativeFirstHandler {
         self.fallback.detects(page).await
     }
 
-    async fn solve(&self, page: &PageHtml) -> Result<HandlerOutcome, AppError> {
-        match self.native.solve(page).await {
+    async fn solve(&self, action: &SolveAction) -> Result<HandlerOutcome, AppError> {
+        match self.native.solve(action).await {
             Ok(out) if matches!(out.status, HandlerStatus::Solved) => Ok(out),
             Ok(out) => {
                 tracing::info!(
@@ -42,7 +44,7 @@ impl ChallengeHandler for NativeFirstHandler {
                     status = ?out.status,
                     "native handler not solved, falling back"
                 );
-                self.fallback.solve(page).await
+                self.fallback.solve(action).await
             }
             Err(e) => {
                 tracing::warn!(
@@ -50,7 +52,7 @@ impl ChallengeHandler for NativeFirstHandler {
                     error = %e,
                     "native handler error, falling back"
                 );
-                self.fallback.solve(page).await
+                self.fallback.solve(action).await
             }
         }
     }
@@ -74,7 +76,7 @@ mod tests {
         async fn detects(&self, _page: &PageHtml) -> Result<bool, AppError> {
             Ok(true)
         }
-        async fn solve(&self, _page: &PageHtml) -> Result<HandlerOutcome, AppError> {
+        async fn solve(&self, _action: &SolveAction) -> Result<HandlerOutcome, AppError> {
             Ok(HandlerOutcome::solved_with_ua(
                 self.0,
                 CookieJarDelta::default(),
@@ -93,7 +95,7 @@ mod tests {
         async fn detects(&self, _page: &PageHtml) -> Result<bool, AppError> {
             Ok(true)
         }
-        async fn solve(&self, _page: &PageHtml) -> Result<HandlerOutcome, AppError> {
+        async fn solve(&self, _action: &SolveAction) -> Result<HandlerOutcome, AppError> {
             Err(AppError::InternalError("synthetic".into()))
         }
     }
@@ -105,7 +107,7 @@ mod tests {
             Arc::new(SolvedHandler("fallback")),
         );
         let out = h
-            .solve(&PageHtml::new("https://x/", ""))
+            .solve(&SolveAction::new(PageHtml::new("https://x/", "")))
             .await
             .expect("solve");
         assert_eq!(out.handler, "native");
@@ -115,7 +117,7 @@ mod tests {
     async fn falls_back_on_error() {
         let h = NativeFirstHandler::new(Arc::new(FailingHandler), Arc::new(SolvedHandler("fb")));
         let out = h
-            .solve(&PageHtml::new("https://x/", ""))
+            .solve(&SolveAction::new(PageHtml::new("https://x/", "")))
             .await
             .expect("solve");
         assert_eq!(out.handler, "fb");

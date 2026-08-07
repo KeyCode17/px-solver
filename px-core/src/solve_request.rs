@@ -17,8 +17,19 @@ impl SolveRequest {
         }
     }
 
+    /// Route this solve through one egress proxy, so the returned bundle is
+    /// bound to an IP the caller can reuse. `scheme://host:port`, where
+    /// scheme is `http`, `https`, `socks5` or `socks5h`.
     pub fn with_proxy(mut self, proxy: impl Into<String>) -> Self {
         self.proxy = Some(proxy.into());
+        self
+    }
+
+    /// [`Self::with_proxy`] for an already-optional value, so an edge that
+    /// deserializes a nullable `proxy` field forwards it without branching.
+    #[must_use]
+    pub fn with_proxy_opt(mut self, proxy: Option<String>) -> Self {
+        self.proxy = proxy;
         self
     }
 

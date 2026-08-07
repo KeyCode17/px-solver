@@ -9,7 +9,9 @@ use std::time::Instant;
 use async_trait::async_trait;
 use px_core::{CookieJarDelta, Fingerprint, PxAppId};
 use px_errors::AppError;
-use px_pipeline::{ChallengeHandler, HandlerMetrics, HandlerName, HandlerOutcome, PageHtml};
+use px_pipeline::{
+    ChallengeHandler, HandlerMetrics, HandlerName, HandlerOutcome, PageHtml, SolveAction,
+};
 
 use crate::domain::native_solver::{NativeSolver, SolveContext};
 
@@ -39,9 +41,10 @@ impl ChallengeHandler for NativePxHandler {
         Ok(true)
     }
 
-    async fn solve(&self, page: &PageHtml) -> Result<HandlerOutcome, AppError> {
+    async fn solve(&self, action: &SolveAction) -> Result<HandlerOutcome, AppError> {
         let started = Instant::now();
-        let ctx = SolveContext::new(page.url.clone(), self.app_id.clone(), default_fingerprint());
+        let ctx = SolveContext::new(action.url(), self.app_id.clone(), default_fingerprint())
+            .with_proxy(action.proxy.clone());
         let bundle = self.solver.solve(&ctx).await?;
         let metrics = HandlerMetrics {
             solve_ms: started.elapsed().as_millis() as u64,
@@ -81,12 +84,17 @@ mod tests {
     use px_core::{NamedCookie, PxCookieBundle};
     use px_pipeline::HandlerStatus;
     use std::time::{Duration, SystemTime};
+    use tokio::sync::Mutex;
 
-    struct AlwaysOkSolver;
+    #[derive(Default)]
+    struct AlwaysOkSolver {
+        seen_proxy: Mutex<Option<String>>,
+    }
 
     #[async_trait]
     impl NativeSolver for AlwaysOkSolver {
-        async fn solve(&self, _ctx: &SolveContext) -> Result<PxCookieBundle, AppError> {
+        async fn solve(&self, ctx: &SolveContext) -> Result<PxCookieBundle, AppError> {
+            *self.seen_proxy.lock().await = ctx.proxy.clone();
             Ok(PxCookieBundle::new(
                 vec![NamedCookie {
                     name: "_px3".into(),
@@ -107,12 +115,29 @@ mod tests {
 
     #[tokio::test]
     async fn handler_reports_solved_status() {
-        let handler =
-            NativePxHandler::new(Arc::new(AlwaysOkSolver) as Arc<dyn NativeSolver>, app_id());
-        let page = PageHtml::new("https://www.pedidosya.com.ar/", "");
-        let out = handler.solve(&page).await.expect("solve");
+        let handler = NativePxHandler::new(
+            Arc::new(AlwaysOkSolver::default()) as Arc<dyn NativeSolver>,
+            app_id(),
+        );
+        let action = SolveAction::new(PageHtml::new("https://www.pedidosya.com.ar/", ""));
+        let out = handler.solve(&action).await.expect("solve");
         assert_eq!(out.status, HandlerStatus::Solved);
         assert_eq!(out.cookies.set.len(), 1);
         assert_eq!(out.user_agent.as_deref(), Some("ua"));
+    }
+
+    /// The native path must carry the request's proxy into the sensor POST;
+    /// dropping it here would send the payload from the server's own IP.
+    #[tokio::test]
+    async fn handler_forwards_the_requested_proxy_to_the_solver() {
+        let solver = Arc::new(AlwaysOkSolver::default());
+        let handler = NativePxHandler::new(Arc::clone(&solver) as Arc<dyn NativeSolver>, app_id());
+        let action = SolveAction::new(PageHtml::new("https://www.pedidosya.com.ar/", ""))
+            .with_proxy(Some("http://egress:8080".into()));
+        let _ = handler.solve(&action).await.expect("solve");
+        assert_eq!(
+            solver.seen_proxy.lock().await.as_deref(),
+            Some("http://egress:8080")
+        );
     }
 }

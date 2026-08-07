@@ -1,5 +1,6 @@
 use crate::domain::harvester::{HarvestRequest, HarvestResult, HarvestedCookie, Harvester};
 use crate::domain::stealth::{StealthBundle, default_stealth_bundle};
+use crate::infrastructure::egress::strip_credentials;
 use async_trait::async_trait;
 use chromiumoxide::browser::{Browser, BrowserConfig};
 use chromiumoxide::page::Page;
@@ -47,10 +48,16 @@ impl ChromiumoxidePool {
         self
     }
 
-    async fn launch_browser(&self) -> Result<(Browser, tokio::task::JoinHandle<()>), AppError> {
+    async fn launch_browser(
+        &self,
+        proxy: Option<&str>,
+    ) -> Result<(Browser, tokio::task::JoinHandle<()>), AppError> {
         let mut cfg = BrowserConfig::builder();
         if !self.config.headless {
             cfg = cfg.with_head();
+        }
+        if let Some(proxy_url) = proxy {
+            cfg = cfg.arg(("proxy-server", proxy_url));
         }
         let cfg = cfg
             .build()
@@ -93,7 +100,13 @@ impl Harvester for ChromiumoxidePool {
             .acquire()
             .await
             .map_err(|e| AppError::InternalError(format!("semaphore: {e}")))?;
-        let (mut browser, _handle) = self.launch_browser().await?;
+        let proxy = req.proxy.clone().map(strip_credentials);
+        tracing::info!(
+            url = %req.url,
+            proxy = proxy.as_deref().unwrap_or("direct"),
+            "chromium harvest starting"
+        );
+        let (mut browser, _handle) = self.launch_browser(proxy.as_deref()).await?;
         let page = browser
             .new_page("about:blank")
             .await

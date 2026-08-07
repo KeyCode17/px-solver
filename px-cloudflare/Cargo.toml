@@ -23,7 +23,7 @@ px-harvester = { workspace = true }
 px-pipeline = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["macros", "rt"] }
+tokio = { workspace = true, features = ["macros", "rt", "sync"] }
 
 [lib]
 name = "px_cloudflare"

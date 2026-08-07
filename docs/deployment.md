@@ -127,18 +127,74 @@ The optional `handler:` field (added in v1.1.x per [ADR-0023](adr/0023-allowlist
 
 Currently the server reads `PX_BIND`, `PX_KEYS`, `PX_ALLOWLIST` env vars. A YAML config file is reserved for future use.
 
-### Egress proxy rotation (optional)
+## Egress proxies
 
-For sustained `/v1/fetch` traffic against rate-limiting WAFs (pedidosya's PerimeterX flags a single IP after ~30 fetches/min), set `PX_PROXIES` to a CSV list of proxy URLs. Each persistent Camoufox session for a CF-routed domain is assigned a proxy round-robin from the list:
+There are **two** proxy mechanisms and they do different jobs. Pick by endpoint:
+
+| | `/v1/solve` | `/v1/fetch` |
+|---|---|---|
+| How you assign it | `"proxy"` in the request body (or `px-cli solve --proxy`) | `PX_PROXIES` env var, operator-side |
+| Chosen per | request | Camoufox session |
+| Rotation | none — the solve uses exactly the proxy you named | round-robin across the list |
+| Omitted → | server's own IP | server's own IP |
+
+### `/v1/solve` — per-request proxy
+
+`_px3` is bound to the IP that earned it, so a bundle is only usable from that same egress. Name the proxy you intend to send downstream traffic through:
 
 ```bash
-PX_PROXIES="http://user:pass@proxy1.example:8080,socks5://user:pass@proxy2.example:1080" \
+curl -X POST http://127.0.0.1:8080/v1/solve \
+  -H "Authorization: Bearer ops1:<secret>" \
+  -H "content-type: application/json" \
+  -d '{"url":"https://www.pedidosya.com.ar/","proxy":"socks5://127.0.0.1:9050"}'
+```
+
+Accepted schemes: `http`, `https`, `socks5`, `socks5h`. `"proxy":null` (or omitting the field) harvests from the server's own address.
+
+The solve **never** falls back to the `PX_PROXIES` rotation — a bundle earned through an IP the caller cannot name would not be usable. The proxy is part of the cache key, so the same domain solved through two different proxies produces two entries and neither is served to the other.
+
+Rust callers build the same request through the published crate:
+
+```rust
+use pxsolver_core::SolveRequest;
+
+let req = SolveRequest::new("https://www.pedidosya.com.ar/")
+    .with_proxy("socks5://127.0.0.1:9050");
+```
+
+### `/v1/fetch` — session rotation via `PX_PROXIES`
+
+For sustained `/v1/fetch` traffic against rate-limiting WAFs (pedidosya's PerimeterX flags a single IP after ~30 fetches/min), set `PX_PROXIES` to a CSV list. Each persistent Camoufox session for a CF-routed domain is assigned one proxy round-robin at spawn:
+
+```bash
+PX_PROXIES="http://proxy1.example:8080,socks5://proxy2.example:1080" \
 ./target/release/px-server
 ```
 
-Empty / unset → direct connection (no rotation). Both `http://` and `socks5://` schemes are accepted by the underlying geckodriver capability. With `PX_FETCH_MAX_PER_DOMAIN=N` (default 2), the pool spawns up to N browsers per domain, each binding to the next proxy in the rotation; the operator's effective concurrency is `N × len(proxies)` parallel egress paths before round-robin reuse kicks in.
+Empty / unset → direct connection (no rotation). `/v1/fetch` has no per-request proxy field: a session is reused for its warm cookie jar, and switching its egress mid-life would mean respawning the browser.
 
-Tor as a quick test: install `tor`, let it bind `socks5://127.0.0.1:9050`, set `PX_PROXIES="socks5://127.0.0.1:9050"`. Many sites block Tor exit IPs; treat it as a fingerprint smoke-test rather than a production proxy.
+**How many IPs you actually get.** A session takes a proxy when it is *spawned*, and keeps it until it ages out (300s TTL). Once a domain holds `PX_FETCH_MAX_PER_DOMAIN=N` sessions (default 2), further requests round-robin those existing sessions and no new proxy is drawn. Distinct egress IPs per domain is therefore:
+
+```
+min(PX_FETCH_MAX_PER_DOMAIN, len(PX_PROXIES))
+```
+
+Ten proxies with the default `N=2` gives a domain **two** IPs, not twenty. Raise `PX_FETCH_MAX_PER_DOMAIN` to use more of the list — each extra session is another live browser, so size it against RAM. The cursor is shared across domains, so proxy *k* is not reserved for any one target.
+
+### Proxy credentials
+
+**Browsers cannot authenticate to a proxy here.** geckodriver's W3C `proxy` capability has no credential field, and Chromium's `--proxy-server` ignores userinfo without a CDP `Fetch.authRequired` handler. `user:pass@` in a `PX_PROXIES` entry or in a `/v1/solve` proxy is **stripped**, and the server logs a warning naming the sanitized URL.
+
+To use an authenticated upstream, front it with a local unauthenticated relay and point px-solver at the relay:
+
+```bash
+gost -L=socks5://127.0.0.1:1080 -F='http://user:pass@upstream.example:8080'
+PX_PROXIES="socks5://127.0.0.1:1080" ./target/release/px-server
+```
+
+The one exception is the native sensor path (`PX_NATIVE_PROFILES`), which posts over `reqwest` and does support proxy authentication; a credentialed proxy works there and only there.
+
+Tor as a quick test: install `tor`, let it bind `socks5://127.0.0.1:9050`, set `PX_PROXIES="socks5://127.0.0.1:9050"` or pass it as a per-request proxy. Many sites block Tor exit IPs; treat it as a fingerprint smoke-test rather than a production proxy.
 
 ## Run
 

@@ -2,7 +2,7 @@
 
 A Rust-built solver service for PerimeterX (HUMAN Security) protection. Given a target URL on a per-domain allowlist, returns a valid `_px3` cookie bundle that a downstream authorized client can use to issue requests as if from a real browser.
 
-> **Status:** v1.2.0 published to crates.io as the `pxsolver-*` family of crates. MVP gate hit at v1.0.0; v1.1.0 added a Camoufox-backed Cloudflare bypass path; v1.2.0 renamed the published library crates. See [GitHub Releases](https://github.com/KeyCode17/px-solver/releases) for the per-version notes.
+> **Status:** published to crates.io as the `pxsolver-*` family of crates. MVP gate hit at v1.0.0; v1.1.0 added a Camoufox-backed Cloudflare bypass path; v1.2.0 renamed the published library crates; v1.8.0 activated native `_px3` sensor synthesis ([ADR-0024](docs/adr/0024-activate-native-px3-sensor-synthesis.md)); v2.0.0 makes the per-request egress proxy real end to end ([ADR-0025](docs/adr/0025-egress-proxy-propagation-contract.md)) — a breaking `ChallengeHandler` / `SolveDispatcher` signature change. See [GitHub Releases](https://github.com/KeyCode17/px-solver/releases) for the per-version notes.
 
 ## What this is
 
@@ -65,6 +65,8 @@ The 16 `pxsolver-*` library crates are also published individually for downstrea
      -d '{"url":"https://www.pedidosya.com.ar/","proxy":null}'
    ```
 
+   `"proxy"` is the egress the solve harvests through — `scheme://host:port` for `http`, `https`, `socks5` or `socks5h`, or `null` for the server's own IP. The returned `_px3` bundle is bound to that IP, so send downstream requests through the same proxy. `PX_PROXIES` is a separate, `/v1/fetch`-only rotation, and browser proxies cannot carry credentials — see [Egress proxies](docs/deployment.md#egress-proxies).
+
    Response shape:
 
    ```json
@@ -90,7 +92,7 @@ For systemd, reverse proxy, and key rotation workflows see [`docs/deployment.md`
 | [`docs/000-sow-index.md`](docs/000-sow-index.md) | Statement of Work index + deliverable traceability |
 | [`docs/adr/README.md`](docs/adr/README.md) | Architecture Decision Records (23 ADRs as of 2026-05-17) |
 | [`docs/phase/README.md`](docs/phase/README.md) | Phase plan (00–04 critical path + R research) |
-| [`docs/deployment.md`](docs/deployment.md) | Fresh-Linux install, systemd, reverse proxy, key generation, allowlist editing |
+| [`docs/deployment.md`](docs/deployment.md) | Fresh-Linux install, systemd, reverse proxy, key generation, allowlist editing, egress proxies |
 | [`docs/threat-model.md`](docs/threat-model.md) | Misuse vectors + mitigations |
 | [`docs/dual-use-policy.md`](docs/dual-use-policy.md) | Operator commitments per [`docs/011-sow-dual-use.md`](docs/011-sow-dual-use.md) |
 | [`docs/standards/axum-best-practice.md`](docs/standards/axum-best-practice.md) | Coding standard (Clean Architecture, ≤200 LOC/file, no `unwrap`) |

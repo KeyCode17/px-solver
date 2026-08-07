@@ -1,14 +1,8 @@
 use anyhow::{Context, Result, bail};
-use serde::{Deserialize, Serialize};
+use px_core::SolveRequest;
+use serde::Deserialize;
 
 use crate::cli::SolveArgs;
-
-#[derive(Debug, Serialize)]
-struct SolveRequest<'a> {
-    url: &'a str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    proxy: Option<&'a str>,
-}
 
 #[derive(Debug, Deserialize)]
 struct SolveEnvelope {
@@ -28,10 +22,7 @@ pub async fn run(args: SolveArgs) -> Result<()> {
         bail!("--api-key (or PX_API_KEY) must be in the form `id:secret`");
     }
     let endpoint = format!("{}/v1/solve", server.trim_end_matches('/'));
-    let body = SolveRequest {
-        url: &url,
-        proxy: proxy.as_deref(),
-    };
+    let body = SolveRequest::new(&url).with_proxy_opt(proxy);
     let client = reqwest::Client::builder()
         .build()
         .context("build http client")?;

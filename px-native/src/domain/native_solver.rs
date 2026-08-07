@@ -7,6 +7,7 @@ pub struct SolveContext {
     pub url: String,
     pub app_id: PxAppId,
     pub fingerprint: Fingerprint,
+    pub proxy: Option<String>,
 }
 
 impl SolveContext {
@@ -15,7 +16,15 @@ impl SolveContext {
             url: url.into(),
             app_id,
             fingerprint,
+            proxy: None,
         }
+    }
+
+    /// Route this solve's sensor POST through one egress proxy.
+    #[must_use]
+    pub fn with_proxy(mut self, proxy: Option<String>) -> Self {
+        self.proxy = proxy;
+        self
     }
 }
 
