@@ -34,9 +34,9 @@ From crates.io, as libraries:
 
 ```toml
 [dependencies]
-pxsolver-core     = "1.9"   # domain types: SolveRequest, PxCookieBundle, CacheKey
-pxsolver-pipeline = "1.9"   # ChallengeHandler, SolveAction, Pipeline
-pxsolver-harvester = "1.9"  # Harvester port + stealth Chromium pool
+pxsolver-core     = "1"   # domain types: SolveRequest, PxCookieBundle, CacheKey
+pxsolver-pipeline = "1"   # ChallengeHandler, SolveAction, Pipeline
+pxsolver-harvester = "1"  # Harvester port + stealth Chromium pool
 ```
 
 All 16 `pxsolver-*` library crates are published individually, so you can depend on one piece

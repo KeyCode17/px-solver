@@ -10,7 +10,7 @@ instead of the whole workspace.
 
 ```toml
 [dependencies]
-pxsolver-datadome = "1.9"
+pxsolver-datadome = "1"
 ```
 
 > **The package name and the crate name differ.** You depend on `pxsolver-datadome`, but you `use px_datadome::…`.

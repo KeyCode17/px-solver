@@ -10,7 +10,7 @@ instead of the whole workspace.
 
 ```toml
 [dependencies]
-pxsolver-captcha = "1.9"
+pxsolver-captcha = "1"
 ```
 
 > **The package name and the crate name differ.** You depend on `pxsolver-captcha`, but you `use px_captcha::…`.
