@@ -10,7 +10,7 @@ instead of the whole workspace.
 
 ```toml
 [dependencies]
-pxsolver-errors = "1.9"
+pxsolver-errors = "1"
 ```
 
 > **The package name and the crate name differ.** You depend on `pxsolver-errors`, but you `use px_errors::…`.

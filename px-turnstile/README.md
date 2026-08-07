@@ -10,7 +10,7 @@ instead of the whole workspace.
 
 ```toml
 [dependencies]
-pxsolver-turnstile = "1.9"
+pxsolver-turnstile = "1"
 ```
 
 > **The package name and the crate name differ.** You depend on `pxsolver-turnstile`, but you `use px_turnstile::…`.
