@@ -2,7 +2,7 @@
 
 A Rust-built solver service for PerimeterX (HUMAN Security) protection. Given a target URL on a per-domain allowlist, returns a valid `_px3` cookie bundle that a downstream authorized client can use to issue requests as if from a real browser.
 
-> **Status:** v1.9.0, published to crates.io as the `pxsolver-*` family of crates. MVP gate hit at v1.0.0; v1.1.0 added a Camoufox-backed Cloudflare bypass path; v1.2.0 renamed the published library crates; v1.8.0 activated native `_px3` sensor synthesis ([ADR-0024](docs/adr/0024-activate-native-px3-sensor-synthesis.md)); v1.9.0 makes the per-request egress proxy real end to end ([ADR-0025](docs/adr/0025-egress-proxy-propagation-contract.md)). See [GitHub Releases](https://github.com/KeyCode17/px-solver/releases) for the per-version notes.
+> **Status:** v1.10.0, published to crates.io as the `pxsolver-*` family of crates. MVP gate hit at v1.0.0; v1.1.0 added a Camoufox-backed Cloudflare bypass path; v1.2.0 renamed the published library crates; v1.8.0 activated native `_px3` sensor synthesis ([ADR-0024](docs/adr/0024-activate-native-px3-sensor-synthesis.md)); v1.9.0 made the per-request egress proxy real end to end ([ADR-0025](docs/adr/0025-egress-proxy-propagation-contract.md)); v1.10.0 carries per-crate documentation only — no code change from v1.9.0. See [GitHub Releases](https://github.com/KeyCode17/px-solver/releases) for the per-version notes.
 >
 > ⚠️ **v1.9.0 is source-breaking despite the minor bump.** `ChallengeHandler::solve` and `SolveDispatcher::solve` take a `SolveAction` / `SolveRequest` instead of `&PageHtml` / `&str`. If you implement `ChallengeHandler` outside this workspace, add the parameter when upgrading; the rest of the published surface is unchanged.
 
