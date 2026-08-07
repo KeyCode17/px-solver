@@ -1,5 +1,6 @@
 use crate::domain::harvester::{HarvestRequest, HarvestResult, HarvestedCookie, Harvester};
 use crate::domain::stealth::{StealthBundle, default_stealth_bundle};
+use crate::infrastructure::egress::{chromium_proxy_spec, strip_credentials};
 use async_trait::async_trait;
 use chromiumoxide::browser::{Browser, BrowserConfig};
 use chromiumoxide::page::Page;
@@ -26,6 +27,12 @@ impl Default for PoolConfig {
     }
 }
 
+/// The launch flag carrying the egress, rendered by chromiumoxide as
+/// `--proxy-server=<spec>`.
+fn proxy_arg(proxy: &str) -> (&'static str, String) {
+    ("proxy-server", chromium_proxy_spec(proxy))
+}
+
 pub struct ChromiumoxidePool {
     config: PoolConfig,
     stealth: StealthBundle,
@@ -47,17 +54,24 @@ impl ChromiumoxidePool {
         self
     }
 
-    async fn launch_browser(&self) -> Result<(Browser, tokio::task::JoinHandle<()>), AppError> {
+    async fn launch_browser(
+        &self,
+        proxy: Option<&str>,
+    ) -> Result<(Browser, tokio::task::JoinHandle<()>), AppError> {
         let mut cfg = BrowserConfig::builder();
         if !self.config.headless {
             cfg = cfg.with_head();
+        }
+        if let Some(proxy_url) = proxy {
+            let (key, value) = proxy_arg(proxy_url);
+            cfg = cfg.arg((key, value.as_str()));
         }
         let cfg = cfg
             .build()
             .map_err(|e| AppError::InternalError(format!("BrowserConfig build: {e}")))?;
         let (browser, mut handler) = Browser::launch(cfg)
             .await
-            .map_err(|e| AppError::InternalError(format!("browser launch: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Browser launch: {e}")))?;
         let handle = tokio::spawn(async move {
             while let Some(event) = handler.next().await {
                 if event.is_err() {
@@ -72,7 +86,7 @@ impl ChromiumoxidePool {
         let cookies = page
             .get_cookies()
             .await
-            .map_err(|e| AppError::InternalError(format!("get_cookies: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Get cookies: {e}")))?;
         Ok(cookies
             .into_iter()
             .map(|c| HarvestedCookie {
@@ -92,34 +106,40 @@ impl Harvester for ChromiumoxidePool {
             .permits
             .acquire()
             .await
-            .map_err(|e| AppError::InternalError(format!("semaphore: {e}")))?;
-        let (mut browser, _handle) = self.launch_browser().await?;
+            .map_err(|e| AppError::InternalError(format!("Semaphore: {e}")))?;
+        let proxy = req.proxy.clone().map(strip_credentials);
+        tracing::info!(
+            url = %req.url,
+            proxy = proxy.as_deref().unwrap_or("direct"),
+            "chromium harvest starting"
+        );
+        let (mut browser, _handle) = self.launch_browser(proxy.as_deref()).await?;
         let page = browser
             .new_page("about:blank")
             .await
-            .map_err(|e| AppError::InternalError(format!("new_page: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("New page: {e}")))?;
         let script = self.stealth.combined();
         if !script.is_empty() {
             page.evaluate_on_new_document(script.as_str())
                 .await
-                .map_err(|e| AppError::InternalError(format!("inject stealth: {e}")))?;
+                .map_err(|e| AppError::InternalError(format!("Inject stealth: {e}")))?;
         }
         let navigate = page.goto(&req.url);
         tokio::time::timeout(self.config.navigate_timeout, navigate)
             .await
-            .map_err(|_| AppError::InternalError("navigate timeout".into()))?
-            .map_err(|e| AppError::InternalError(format!("goto: {e}")))?;
+            .map_err(|_| AppError::InternalError("Navigate timeout".into()))?
+            .map_err(|e| AppError::InternalError(format!("Goto: {e}")))?;
         tokio::time::sleep(Duration::from_millis(req.wait_ms)).await;
         let html = page
             .content()
             .await
-            .map_err(|e| AppError::InternalError(format!("content: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Content: {e}")))?;
         let ua = page
             .evaluate("navigator.userAgent")
             .await
-            .map_err(|e| AppError::InternalError(format!("eval ua: {e}")))?
+            .map_err(|e| AppError::InternalError(format!("Eval user agent: {e}")))?
             .into_value::<String>()
-            .map_err(|e| AppError::InternalError(format!("ua parse: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("User agent parse: {e}")))?;
         let cookies = Self::extract_cookies(&page).await?;
         let _ = browser.close().await;
         Ok(HarvestResult {
@@ -127,5 +147,26 @@ impl Harvester for ChromiumoxidePool {
             user_agent: ua,
             cookies,
         })
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
+mod tests {
+    use super::*;
+
+    /// Regression: the Chromium leg had no proxy argument at all, so a
+    /// requested egress was dropped without a trace.
+    #[test]
+    fn proxy_arg_carries_the_requested_egress() {
+        let (key, value) = proxy_arg("http://egress.example:8080");
+        assert_eq!(key, "proxy-server");
+        assert_eq!(value, "http://egress.example:8080");
+    }
+
+    #[test]
+    fn proxy_arg_normalizes_a_scheme_chromium_would_ignore() {
+        let (_, value) = proxy_arg("socks5h://egress.example:1080");
+        assert_eq!(value, "socks5://egress.example:1080");
     }
 }

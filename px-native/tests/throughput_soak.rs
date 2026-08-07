@@ -19,7 +19,11 @@
 //!     [NATIVE_SOAK_CONCURRENCY=8] \
 //!     [NATIVE_SOAK_TARGET_RPM=40] \
 //!     [NATIVE_SOAK_PROFILE=px-native/profiles/eT15wiaE.toml] \
+//!     [NATIVE_SOAK_PROXY=socks5://... | PX_PROXIES=socks5://...] \
 //!     cargo test -p pxsolver-native --test throughput_soak -- --ignored --nocapture
+//!
+//! Without a proxy the soak leaves through the host's own IP, which a
+//! rate-limiting tenant will flag long before the target rpm is reached.
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -61,9 +65,14 @@ async fn native_throughput_soak() {
     let client = Client::builder().build().expect("client");
     let solver: Arc<dyn NativeSolver> =
         Arc::new(SensorNativeSolver::new(client, Arc::new(profile)));
-    let ctx_template = SolveContext::new(url.clone(), app_id.clone(), soak_fingerprint());
+    let proxy = soak_proxy();
+    let ctx_template = SolveContext::new(url.clone(), app_id.clone(), soak_fingerprint())
+        .with_proxy(proxy.clone());
 
-    eprintln!("soak: n={n} concurrency={concurrency} target_rpm={target_rpm} url={url}");
+    eprintln!(
+        "soak: n={n} concurrency={concurrency} target_rpm={target_rpm} url={url} proxy={}",
+        proxy.as_deref().unwrap_or("direct")
+    );
 
     let mut latencies_ms: Vec<u128> = Vec::with_capacity(n);
     let mut ok_count: usize = 0;
@@ -111,6 +120,21 @@ async fn native_throughput_soak() {
         rpm >= target_rpm,
         "throughput {rpm:.1} req/min below target {target_rpm:.1}"
     );
+}
+
+/// Egress for the soak: `NATIVE_SOAK_PROXY`, else the first `PX_PROXIES`
+/// entry so an operator who already exported the list for the capture
+/// step does not have to restate it.
+fn soak_proxy() -> Option<String> {
+    std::env::var("NATIVE_SOAK_PROXY")
+        .ok()
+        .or_else(|| std::env::var("PX_PROXIES").ok())
+        .and_then(|raw| {
+            raw.split(',')
+                .map(str::trim)
+                .find(|entry| !entry.is_empty())
+                .map(str::to_string)
+        })
 }
 
 fn soak_fingerprint() -> Fingerprint {

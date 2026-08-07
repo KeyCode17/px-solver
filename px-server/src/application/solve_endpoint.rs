@@ -1,14 +1,16 @@
 use async_trait::async_trait;
-use px_core::{CacheKey, PxAppId, PxCookieBundle};
+use px_core::{CacheKey, PxAppId, PxCookieBundle, SolveRequest};
 use px_errors::AppError;
-use px_pipeline::{ChallengeHandler, HandlerStatus, PageHtml};
+use px_pipeline::{ChallengeHandler, HandlerStatus, PageHtml, SolveAction};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use url::Url;
 
 #[async_trait]
 pub trait SolveDispatcher: Send + Sync {
-    async fn solve(&self, url: &str) -> Result<SolveOutput, AppError>;
+    async fn solve(&self, req: SolveRequest) -> Result<SolveOutput, AppError>;
 }
 
 #[derive(Debug, Clone)]
@@ -37,9 +39,9 @@ impl PxSolveDispatcher {
 
 #[async_trait]
 impl SolveDispatcher for PxSolveDispatcher {
-    async fn solve(&self, url: &str) -> Result<SolveOutput, AppError> {
-        let page = PageHtml::new(url, "");
-        let outcome = self.handler.solve(&page).await?;
+    async fn solve(&self, req: SolveRequest) -> Result<SolveOutput, AppError> {
+        let action = SolveAction::new(PageHtml::new(&req.url, "")).with_proxy(req.proxy);
+        let outcome = self.handler.solve(&action).await?;
         if !matches!(outcome.status, HandlerStatus::Solved) {
             return Err(AppError::Conflict(format!(
                 "{} returned status {:?}",
@@ -75,8 +77,25 @@ pub fn cache_key_for(domain: &str, app_id: PxAppId, fp_key: u64) -> CacheKey {
     CacheKey::new(domain, app_id, fp_key)
 }
 
-pub fn sentinel_cache_key(domain: &str) -> Result<CacheKey, AppError> {
+/// Cache key for one solve. The egress is part of the identity: PX binds a
+/// `_px3` bundle to the IP that earned it, so replaying a proxy-A bundle
+/// for a request that asked for proxy B (or for a direct route) hands the
+/// caller cookies their traffic will not match.
+pub fn sentinel_cache_key(domain: &str, proxy: Option<&str>) -> Result<CacheKey, AppError> {
     let app_id = PxAppId::new("Unknown000")
         .map_err(|e| AppError::InternalError(format!("sentinel app_id invalid: {e}")))?;
-    Ok(CacheKey::new(domain, app_id, 0))
+    Ok(CacheKey::new(domain, app_id, egress_key(proxy)))
+}
+
+/// `0` for a direct route, so keys minted before proxies were honoured
+/// keep resolving to the same entry.
+fn egress_key(proxy: Option<&str>) -> u64 {
+    match proxy {
+        None => 0,
+        Some(proxy) => {
+            let mut hasher = DefaultHasher::new();
+            proxy.hash(&mut hasher);
+            hasher.finish()
+        }
+    }
 }

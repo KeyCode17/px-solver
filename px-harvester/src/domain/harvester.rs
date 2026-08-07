@@ -19,6 +19,14 @@ impl HarvestRequest {
             wait_ms: 2_500,
         }
     }
+
+    /// Pin this harvest to one egress proxy. `None` leaves the choice to
+    /// the [`crate::ProxyPool`] the implementation was built with.
+    #[must_use]
+    pub fn with_proxy(mut self, proxy: Option<String>) -> Self {
+        self.proxy = proxy;
+        self
+    }
 }
 
 #[derive(Debug, Clone)]

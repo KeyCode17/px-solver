@@ -89,7 +89,10 @@ pub struct SolveArgs {
     /// API key as `id:secret`.
     #[arg(long, env = "PX_API_KEY")]
     pub api_key: String,
-    /// Optional upstream proxy passed to the solver.
+    /// Egress proxy the solver harvests through, as
+    /// `scheme://host:port` (http, https, socks5, socks5h). The returned
+    /// bundle is bound to that IP, so send downstream requests through the
+    /// same proxy. Omit to harvest from the server's own address.
     #[arg(long)]
     pub proxy: Option<String>,
 }

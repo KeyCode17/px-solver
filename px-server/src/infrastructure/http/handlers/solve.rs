@@ -5,6 +5,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::HeaderMap;
 use px_auth::{AuditEvent, AuditOutcome};
+use px_core::SolveRequest;
 use px_errors::AppError;
 use px_types::SingleResponse;
 use std::sync::atomic::Ordering;
@@ -33,7 +34,8 @@ pub async fn handle(
                 .fetch_add(1, Ordering::Relaxed);
         })?;
     state.metrics.solves_total.fetch_add(1, Ordering::Relaxed);
-    let cache_key = sentinel_cache_key(&domain)?;
+    let request = SolveRequest::new(&payload.url).with_proxy_opt(payload.proxy);
+    let cache_key = sentinel_cache_key(&domain, request.proxy.as_deref())?;
     let cached = state.cache.get(&cache_key).await?;
     let (out, cache_hit) = if let Some(bundle) = cached {
         (
@@ -47,7 +49,7 @@ pub async fn handle(
             true,
         )
     } else {
-        let result = state.dispatcher.solve(&payload.url).await;
+        let result = state.dispatcher.solve(request).await;
         let solved = match result {
             Ok(v) => v,
             Err(e) => {

@@ -5,6 +5,7 @@ use px_core::{CookieJarDelta, NamedToken};
 use px_errors::AppError;
 use px_pipeline::{
     ChallengeHandler, HandlerMetrics, HandlerOutcome, HandlerStatus, PageHtml, Pipeline,
+    SolveAction,
 };
 use std::sync::Arc;
 
@@ -18,7 +19,7 @@ impl ChallengeHandler for SkippingHandler {
     async fn detects(&self, _page: &PageHtml) -> Result<bool, AppError> {
         Ok(false)
     }
-    async fn solve(&self, _page: &PageHtml) -> Result<HandlerOutcome, AppError> {
+    async fn solve(&self, _action: &SolveAction) -> Result<HandlerOutcome, AppError> {
         Err(AppError::InternalError(
             "should not be called when detects=false".into(),
         ))
@@ -35,7 +36,7 @@ impl ChallengeHandler for SolvingHandler {
     async fn detects(&self, _page: &PageHtml) -> Result<bool, AppError> {
         Ok(true)
     }
-    async fn solve(&self, _page: &PageHtml) -> Result<HandlerOutcome, AppError> {
+    async fn solve(&self, _action: &SolveAction) -> Result<HandlerOutcome, AppError> {
         Ok(HandlerOutcome::solved(
             "solve",
             CookieJarDelta::default(),
@@ -55,7 +56,7 @@ impl ChallengeHandler for StubHandler {
     async fn detects(&self, _page: &PageHtml) -> Result<bool, AppError> {
         Ok(true)
     }
-    async fn solve(&self, _page: &PageHtml) -> Result<HandlerOutcome, AppError> {
+    async fn solve(&self, _action: &SolveAction) -> Result<HandlerOutcome, AppError> {
         Ok(HandlerOutcome::not_implemented("stub"))
     }
 }
@@ -64,7 +65,10 @@ impl ChallengeHandler for StubHandler {
 async fn pipeline_skips_then_solves_and_stops() {
     let pipeline = Pipeline::new(vec![Arc::new(SkippingHandler), Arc::new(SolvingHandler)]);
     let page = PageHtml::new("https://x", "<html/>");
-    let outcomes = pipeline.run(&page).await.expect("run ok");
+    let outcomes = pipeline
+        .run(&SolveAction::new(page.clone()))
+        .await
+        .expect("run ok");
     assert_eq!(outcomes.len(), 2);
     assert_eq!(outcomes[0].status, HandlerStatus::Skipped);
     assert_eq!(outcomes[1].status, HandlerStatus::Solved);
@@ -75,7 +79,10 @@ async fn stop_on_solve_false_continues_past_solver() {
     let pipeline = Pipeline::new(vec![Arc::new(SolvingHandler), Arc::new(StubHandler)])
         .with_stop_on_solve(false);
     let page = PageHtml::new("https://x", "<html/>");
-    let outcomes = pipeline.run(&page).await.expect("run ok");
+    let outcomes = pipeline
+        .run(&SolveAction::new(page.clone()))
+        .await
+        .expect("run ok");
     assert_eq!(outcomes.len(), 2);
     assert_eq!(outcomes[0].status, HandlerStatus::Solved);
     assert_eq!(outcomes[1].status, HandlerStatus::NotImplemented);
@@ -85,7 +92,10 @@ async fn stop_on_solve_false_continues_past_solver() {
 async fn first_solver_stops_pipeline() {
     let pipeline = Pipeline::new(vec![Arc::new(SolvingHandler), Arc::new(StubHandler)]);
     let page = PageHtml::new("https://x", "<html/>");
-    let outcomes = pipeline.run(&page).await.expect("run ok");
+    let outcomes = pipeline
+        .run(&SolveAction::new(page.clone()))
+        .await
+        .expect("run ok");
     assert_eq!(outcomes.len(), 1);
     assert_eq!(outcomes[0].status, HandlerStatus::Solved);
 }

@@ -3,7 +3,7 @@ use crate::infrastructure::caps::{build_capabilities, pick_free_port, wait_for_g
 use async_trait::async_trait;
 use fantoccini::ClientBuilder;
 use px_errors::AppError;
-use px_harvester::{HarvestRequest, HarvestResult, HarvestedCookie, Harvester};
+use px_harvester::{HarvestRequest, HarvestResult, HarvestedCookie, Harvester, strip_credentials};
 use serde_json::{Map, Value};
 use std::sync::Arc;
 use std::time::Duration;
@@ -25,7 +25,7 @@ impl CamoufoxPool {
     pub fn new(config: CamoufoxConfig) -> Result<Self, AppError> {
         config
             .validate()
-            .map_err(|e| AppError::InternalError(format!("camoufox config: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Camoufox config: {e}")))?;
         let permits = Arc::new(Semaphore::new(config.max_concurrent));
         let max_per_domain = std::env::var("PX_FETCH_MAX_PER_DOMAIN")
             .ok()
@@ -35,6 +35,8 @@ impl CamoufoxPool {
         if !proxies.is_empty() {
             tracing::info!(
                 count = proxies.len(),
+                max_per_domain,
+                distinct_egress_per_domain = max_per_domain.min(proxies.len()),
                 "proxy rotation enabled for /v1/fetch sessions"
             );
         }
@@ -76,7 +78,7 @@ impl CamoufoxPool {
             .permits
             .acquire()
             .await
-            .map_err(|e| AppError::InternalError(format!("semaphore: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Semaphore: {e}")))?;
         let port = pick_free_port().await?;
         let mut child = Command::new(&self.config.geckodriver_bin)
             .arg("--port")
@@ -87,7 +89,7 @@ impl CamoufoxPool {
             .stderr(std::process::Stdio::null())
             .kill_on_drop(true)
             .spawn()
-            .map_err(|e| AppError::InternalError(format!("spawn geckodriver: {e}")))?;
+            .map_err(|e| AppError::InternalError(format!("Spawn geckodriver: {e}")))?;
         wait_for_geckodriver(port, Duration::from_secs(15)).await?;
         let caps = build_capabilities(&self.config, proxy);
         let endpoint = format!("http://127.0.0.1:{port}");
@@ -101,7 +103,12 @@ impl CamoufoxPool {
 impl Harvester for CamoufoxPool {
     async fn harvest(&self, req: HarvestRequest) -> Result<HarvestResult, AppError> {
         let navigate_timeout = self.config.navigate_timeout;
-        let proxy = req.proxy.clone();
+        let proxy = req.proxy.clone().map(strip_credentials);
+        tracing::info!(
+            url = %req.url,
+            proxy = proxy.as_deref().unwrap_or("direct"),
+            "camoufox harvest starting"
+        );
         self.with_session(proxy.as_deref(), async move |endpoint, caps| {
             harvest_session(&endpoint, caps, &req, navigate_timeout).await
         })
@@ -119,26 +126,26 @@ async fn harvest_session(
         .capabilities(caps)
         .connect(endpoint)
         .await
-        .map_err(|e| AppError::InternalError(format!("webdriver connect: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Webdriver connect: {e}")))?;
     let nav = client.goto(&req.url);
     if tokio::time::timeout(navigate_timeout, nav).await.is_err() {
         let _ = client.close().await;
-        return Err(AppError::InternalError("navigate timeout".into()));
+        return Err(AppError::InternalError("Navigate timeout".into()));
     }
     sleep(Duration::from_millis(req.wait_ms)).await;
     let html = client
         .source()
         .await
-        .map_err(|e| AppError::InternalError(format!("source: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Source: {e}")))?;
     let ua_val = client
         .execute("return navigator.userAgent;", vec![])
         .await
-        .map_err(|e| AppError::InternalError(format!("ua eval: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("User agent eval: {e}")))?;
     let user_agent = ua_val.as_str().unwrap_or("").to_string();
     let raw_cookies = client
         .get_all_cookies()
         .await
-        .map_err(|e| AppError::InternalError(format!("cookies: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Cookies: {e}")))?;
     let cookies = raw_cookies
         .into_iter()
         .map(|c| HarvestedCookie {

@@ -1,6 +1,6 @@
 use crate::domain::challenge_handler::ChallengeHandler;
 use crate::domain::handler_outcome::HandlerOutcome;
-use crate::domain::page_html::PageHtml;
+use crate::domain::solve_action::SolveAction;
 use px_errors::AppError;
 use std::sync::Arc;
 
@@ -27,11 +27,11 @@ impl Pipeline {
         self.handlers.len()
     }
 
-    pub async fn run(&self, page: &PageHtml) -> Result<Vec<HandlerOutcome>, AppError> {
+    pub async fn run(&self, action: &SolveAction) -> Result<Vec<HandlerOutcome>, AppError> {
         let mut outcomes = Vec::with_capacity(self.handlers.len());
         for handler in &self.handlers {
-            if handler.detects(page).await? {
-                let outcome = handler.solve(page).await?;
+            if handler.detects(&action.page).await? {
+                let outcome = handler.solve(action).await?;
                 let solved = matches!(
                     outcome.status,
                     crate::domain::handler_outcome::HandlerStatus::Solved

@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use px_detector::{Detected, Detector, RegexDetector};
 use px_errors::AppError;
 use px_harvester::Harvester;
-use px_pipeline::{ChallengeHandler, HandlerMetrics, HandlerOutcome, PageHtml};
+use px_pipeline::{ChallengeHandler, HandlerMetrics, HandlerOutcome, PageHtml, SolveAction};
 use std::sync::Arc;
 
 pub struct PerimeterxHandler {
@@ -30,8 +30,11 @@ impl ChallengeHandler for PerimeterxHandler {
         Ok(matches!(self.detector.detect(&page.html), Detected::Yes(_)))
     }
 
-    async fn solve(&self, page: &PageHtml) -> Result<HandlerOutcome, AppError> {
-        let out = self.solver.execute(&page.url).await?;
+    async fn solve(&self, action: &SolveAction) -> Result<HandlerOutcome, AppError> {
+        let out = self
+            .solver
+            .execute(action.url(), action.proxy.clone())
+            .await?;
         let metrics = HandlerMetrics {
             detect_us: 0,
             solve_ms: out.solve_ms,

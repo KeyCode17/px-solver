@@ -20,9 +20,10 @@ impl SolvePx {
         Self { harvester }
     }
 
-    pub async fn execute(&self, url: &str) -> Result<SolveOutput, AppError> {
+    pub async fn execute(&self, url: &str, proxy: Option<String>) -> Result<SolveOutput, AppError> {
         let start = Instant::now();
-        let result = self.harvester.harvest(HarvestRequest::new(url)).await?;
+        let request = HarvestRequest::new(url).with_proxy(proxy);
+        let result = self.harvester.harvest(request).await?;
         let px_cookies: Vec<NamedCookie> = extract_px_cookies(&result.cookies)
             .into_iter()
             .map(|c| NamedCookie {

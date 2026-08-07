@@ -6,3 +6,4 @@ pub use domain::challenge_handler::{ChallengeHandler, HandlerName};
 pub use domain::fetcher::{FetchRequest, FetchResponse, Fetcher};
 pub use domain::handler_outcome::{HandlerMetrics, HandlerOutcome, HandlerStatus};
 pub use domain::page_html::PageHtml;
+pub use domain::solve_action::SolveAction;

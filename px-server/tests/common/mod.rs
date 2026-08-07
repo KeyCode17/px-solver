@@ -19,6 +19,7 @@ use px_server::{AppState, AppStateConfig};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, SystemTime};
+use tokio::sync::Mutex;
 
 pub fn hash(secret: &str) -> String {
     let salt = SaltString::encode_b64(b"px-solver-test-salt-fixed").expect("salt");
@@ -31,12 +32,14 @@ pub fn hash(secret: &str) -> String {
 #[derive(Default)]
 pub struct FakeDispatcher {
     pub calls: AtomicUsize,
+    pub last_proxy: Mutex<Option<String>>,
 }
 
 #[async_trait]
 impl SolveDispatcher for FakeDispatcher {
-    async fn solve(&self, _url: &str) -> Result<SolveOutput, AppError> {
+    async fn solve(&self, req: px_core::SolveRequest) -> Result<SolveOutput, AppError> {
         self.calls.fetch_add(1, Ordering::Relaxed);
+        *self.last_proxy.lock().await = req.proxy;
         Ok(SolveOutput {
             bundle: px_core::PxCookieBundle::new(
                 vec![NamedCookie {

@@ -91,14 +91,4 @@ impl SessionPool {
         let idx = slot.cursor.fetch_add(1, Ordering::Relaxed) % slot.sessions.len();
         Ok(Arc::clone(&slot.sessions[idx]))
     }
-
-    #[allow(dead_code)]
-    pub(crate) async fn total_sessions(&self) -> usize {
-        self.domains
-            .lock()
-            .await
-            .values()
-            .map(|slot| slot.sessions.len())
-            .sum()
-    }
 }
