@@ -182,7 +182,24 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.95"
+      # Restore only, never save.
+      #
+      # `cargo publish` leaves its scratch in `target/package/<crate>-<ver>/`,
+      # and for any crate shipping a `tests/` dir that scratch contains a
+      # directory literally named `tests`. rust-cache's save-time cleanup
+      # descends into every such directory and recurses into `tests/target`
+      # and `tests/trybuild` (a carve-out for trybuild/macrotest artifacts).
+      # Neither path exists here — this workspace has no trybuild dependency —
+      # and the recursion is *not* awaited inside its own try/catch, so the
+      # ENOENT escapes as an unhandled rejection: red annotations on a job
+      # that actually succeeded, on a nondeterministic subset of crates.
+      #
+      # Publish scratch is single-use and worth nothing in the cache, and
+      # `pre-flight` already populates it from the same key, so declining to
+      # save removes the failing code path outright rather than racing it.
       - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: false
 
       # Publish strategy (ported from rust-ai-surfer):
       #   * `cargo search` is the skip-check (no User-Agent header drama like
