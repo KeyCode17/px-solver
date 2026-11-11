@@ -1,0 +1,4 @@
+# Captured third-party PerimeterX bundles and their deobfuscated output are
+# research artifacts, not project source. Exclude them from GitHub language stats.
+px-research/init-js/** linguist-vendored
+px-research/deobf/**   linguist-vendored linguist-generated
