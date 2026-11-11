@@ -19,7 +19,7 @@ px-core     = { workspace = true }
 px-errors   = { workspace = true }
 serde       = { workspace = true }
 serde_json  = { workspace = true }
-serde_yaml  = { workspace = true }
+serde_norway = { workspace = true }
 subtle      = { workspace = true }
 tokio       = { workspace = true, features = ["sync", "macros", "rt", "fs", "io-util"] }
 tracing     = { workspace = true }

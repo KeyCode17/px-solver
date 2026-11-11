@@ -80,11 +80,11 @@ async fn read_or_empty(path: &Path) -> Result<AllowlistFile> {
         return Ok(AllowlistFile::default());
     }
     let bytes = tokio::fs::read(path).await.context("read allowlist")?;
-    serde_yaml::from_slice(&bytes).context("parse allowlist")
+    serde_norway::from_slice(&bytes).context("parse allowlist")
 }
 
 async fn write(path: &Path, file: &AllowlistFile) -> Result<()> {
-    let bytes = serde_yaml::to_string(file).context("serialize allowlist")?;
+    let bytes = serde_norway::to_string(file).context("serialize allowlist")?;
     tokio::fs::write(path, bytes)
         .await
         .context("write allowlist")?;

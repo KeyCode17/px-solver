@@ -22,7 +22,7 @@ impl YamlAllowlistStore {
         let bytes = tokio::fs::read(path.as_ref())
             .await
             .map_err(|e| AppError::InternalError(format!("read allowlist yaml: {e}")))?;
-        let parsed: AllowlistFile = serde_yaml::from_slice(&bytes)
+        let parsed: AllowlistFile = serde_norway::from_slice(&bytes)
             .map_err(|e| AppError::InternalError(format!("parse allowlist yaml: {e}")))?;
         for entry in &parsed.entries {
             entry

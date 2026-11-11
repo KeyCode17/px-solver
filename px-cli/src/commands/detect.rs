@@ -11,7 +11,7 @@ pub async fn run(args: DetectArgs) -> Result<()> {
     };
     match RegexDetector::new().detect(&html) {
         Detected::Yes(d) => {
-            let serialized = serde_yaml::to_string(&d).context("serialize detection")?;
+            let serialized = serde_norway::to_string(&d).context("serialize detection")?;
             println!("{serialized}");
             Ok(())
         }
