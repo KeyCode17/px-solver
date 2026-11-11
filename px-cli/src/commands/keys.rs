@@ -68,7 +68,7 @@ fn generate_secret_and_hash() -> Result<(String, String)> {
 async fn append_key(path: &Path, entry: KeyEntry) -> Result<()> {
     let mut file: KeysFile = if path.exists() {
         let bytes = tokio::fs::read(path).await.context("read keys file")?;
-        serde_yaml::from_slice(&bytes).context("parse keys file")?
+        serde_norway::from_slice(&bytes).context("parse keys file")?
     } else {
         KeysFile::default()
     };
@@ -80,7 +80,7 @@ async fn append_key(path: &Path, entry: KeyEntry) -> Result<()> {
         );
     }
     file.keys.push(entry);
-    let bytes = serde_yaml::to_string(&file).context("serialize keys file")?;
+    let bytes = serde_norway::to_string(&file).context("serialize keys file")?;
     tokio::fs::write(path, bytes)
         .await
         .context("write keys file")?;

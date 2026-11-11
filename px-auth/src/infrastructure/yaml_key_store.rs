@@ -19,7 +19,7 @@ impl YamlKeyStore {
         let bytes = tokio::fs::read(path.as_ref())
             .await
             .map_err(|e| AppError::InternalError(format!("read keys yaml: {e}")))?;
-        let parsed: KeysFile = serde_yaml::from_slice(&bytes)
+        let parsed: KeysFile = serde_norway::from_slice(&bytes)
             .map_err(|e| AppError::InternalError(format!("parse keys yaml: {e}")))?;
         let mut by_id = HashMap::new();
         for k in parsed.keys {
